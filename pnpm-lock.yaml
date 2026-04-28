@@ -72,6 +72,9 @@ importers:
       '@ble/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ble/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@ble/tenant-schema':
         specifier: workspace:*
         version: link:../../packages/tenants/_schema
@@ -106,6 +109,12 @@ importers:
       '@ble/tenant-schema':
         specifier: workspace:*
         version: link:../tenants/_schema
+      '@supabase/supabase-js':
+        specifier: ^2.49.4
+        version: 2.105.1
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
       zod:
         specifier: ^3.24.3
         version: 3.25.76

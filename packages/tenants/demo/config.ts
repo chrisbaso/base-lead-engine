@@ -13,17 +13,54 @@ export default defineTenantConfig({
     accentColor: "#f59e0b"
   },
   domains: ["localhost", "demo.localhost"],
-  tracking: {},
+  tracking: {
+    gtmContainerId: "GTM-DEMO",
+    metaPixelId: "1234567890",
+    metaAccessTokenEnv: "DEMO_META_ACCESS_TOKEN",
+    googleAdsConversionId: "AW-DEMO",
+    googleAdsConversionLabel: "demo_lead",
+    eventMappings: {
+      PageView: { gtm: "page_view", meta: "PageView", googleAds: "page_view" },
+      LeadStarted: { gtm: "lead_started", meta: "Lead", googleAds: "lead_started" },
+      LeadStepCompleted: {
+        gtm: "lead_step_completed",
+        meta: "CustomizeProduct",
+        googleAds: "lead_step_completed"
+      },
+      LeadCompleted: { gtm: "lead_completed", meta: "Lead", googleAds: "conversion" },
+      LeadQualified: { gtm: "lead_qualified", meta: "CompleteRegistration", googleAds: "qualified_lead" }
+    }
+  },
   leadCapture: {
-    type: "singleForm",
+    type: "quiz",
     headline: "Launch a lead funnel without new code",
-    subheadline: "This demo tenant proves hostname-based config and schema rendering are wired.",
+    subheadline: "Answer three quick questions and see the lead engine capture flow in action.",
     steps: [
       {
-        id: "contact",
-        title: "Tell us where to send the playbook",
+        id: "goal",
+        title: "What are you trying to launch?",
         fields: [
-          { id: "email", label: "Email", type: "email", required: true },
+          {
+            id: "launch_goal",
+            label: "Launch goal",
+            type: "select",
+            required: true,
+            options: ["Quiz funnel", "Calculator funnel", "Lead form"]
+          }
+        ]
+      },
+      {
+        id: "volume",
+        title: "How many leads do you want each month?",
+        fields: [
+          { id: "monthly_leads", label: "Target leads per month", type: "number", required: true }
+        ]
+      },
+      {
+        id: "contact",
+        title: "Where should we send the demo plan?",
+        fields: [
+          { id: "email", label: "Email", type: "email", required: true, capturePartial: true },
           { id: "company", label: "Company", type: "text", required: true }
         ]
       }

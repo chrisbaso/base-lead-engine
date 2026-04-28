@@ -5,15 +5,31 @@ export const fieldSchema = z.object({
   label: z.string().min(1),
   type: z.enum(["text", "email", "tel", "number", "select", "checkbox"]),
   required: z.boolean().default(false),
-  options: z.array(z.string().min(1)).optional()
+  options: z.array(z.string().min(1)).optional(),
+  capturePartial: z.boolean().default(false)
 });
 
 export const leadCaptureStepSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
   description: z.string().optional(),
-  fields: z.array(fieldSchema).min(1)
+  fields: z.array(fieldSchema).min(1),
+  branch: z
+    .object({
+      field: z.string().min(1),
+      equals: z.union([z.string(), z.number(), z.boolean()]),
+      nextStepId: z.string().min(1)
+    })
+    .optional()
 });
+
+export const trackingEventNameSchema = z.enum([
+  "PageView",
+  "LeadStarted",
+  "LeadStepCompleted",
+  "LeadCompleted",
+  "LeadQualified"
+]);
 
 export const tenantConfigSchema = z.object({
   identity: z.object({
@@ -31,7 +47,20 @@ export const tenantConfigSchema = z.object({
   tracking: z.object({
     gtmContainerId: z.string().optional(),
     metaPixelId: z.string().optional(),
-    googleAdsConversionId: z.string().optional()
+    metaAccessTokenEnv: z.string().optional(),
+    googleAdsConversionId: z.string().optional(),
+    googleAdsConversionLabel: z.string().optional(),
+    googleAdsEnhancedConversionsEndpoint: z.string().url().optional(),
+    eventMappings: z
+      .record(
+        trackingEventNameSchema,
+        z.object({
+          meta: z.string().optional(),
+          googleAds: z.string().optional(),
+          gtm: z.string().optional()
+        })
+      )
+      .default({})
   }),
   leadCapture: z.object({
     type: z.enum(["quiz", "calculator", "multiStepForm", "singleForm"]),
@@ -75,7 +104,8 @@ export const tenantConfigSchema = z.object({
 });
 
 export type TenantConfig = z.infer<typeof tenantConfigSchema>;
+export type TenantConfigInput = z.input<typeof tenantConfigSchema>;
 
-export function defineTenantConfig(config: TenantConfig): TenantConfig {
+export function defineTenantConfig(config: TenantConfigInput): TenantConfig {
   return tenantConfigSchema.parse(config);
 }

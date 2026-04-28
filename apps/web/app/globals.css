@@ -75,7 +75,8 @@ h1 {
   gap: 8px;
 }
 
-.lead-form input {
+.lead-form input,
+.lead-form select {
   min-height: 44px;
   border: 1px solid #2b3b52;
   border-radius: 6px;
@@ -91,4 +92,40 @@ h1 {
   padding: 12px 18px;
   color: #061015;
   font-weight: 700;
+}
+
+.lead-form button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #223149;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #14b8a6;
+  transition: width 180ms ease;
+}
+
+.exit-intent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #31445f;
+  border-radius: 8px;
+  padding: 14px;
+  background: #0b1424;
+}
+
+.exit-intent p {
+  margin: 0;
+  color: var(--muted);
 }

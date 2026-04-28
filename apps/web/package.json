@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ble/core": "workspace:*",
+    "@ble/db": "workspace:*",
     "@ble/tenant-schema": "workspace:*",
     "@ble/ui": "workspace:*",
     "next": "15.5.7",

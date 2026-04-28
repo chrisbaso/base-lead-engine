@@ -5,6 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./lead-capture": "./src/lead-capture/index.ts",
+    "./lead-capture/components": "./src/lead-capture/components.tsx",
+    "./lead-capture/pipeline": "./src/lead-capture/pipeline.ts",
+    "./lead-capture/schema": "./src/lead-capture/schema.ts",
+    "./tracking": "./src/tracking/index.ts",
     "./tenant-config": "./src/tenant-config/index.ts"
   },
   "scripts": {
@@ -16,6 +21,8 @@
   "dependencies": {
     "@ble/tenant-demo": "workspace:*",
     "@ble/tenant-schema": "workspace:*",
+    "@supabase/supabase-js": "^2.49.4",
+    "react": "19.2.4",
     "zod": "^3.24.3"
   }
 }
