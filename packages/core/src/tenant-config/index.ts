@@ -28,7 +28,7 @@ export function getTenantConfig(slug: string): TenantConfig {
     return cached;
   }
 
-  const config = tenantConfigs[slug as TenantSlug];
+  const config = tenantConfigs[slug];
   if (!config) {
     throw new Error(`Unknown tenant config: ${slug}`);
   }
