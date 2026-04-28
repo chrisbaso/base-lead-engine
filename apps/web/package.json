@@ -1,0 +1,26 @@
+{
+  "name": "@ble/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --port 3000",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ble/core": "workspace:*",
+    "@ble/tenant-schema": "workspace:*",
+    "@ble/ui": "workspace:*",
+    "next": "15.5.7",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
+  }
+}

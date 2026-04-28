@@ -1,0 +1,54 @@
+:root {
+  color-scheme: dark;
+  --background: #070b12;
+  --foreground: #f4f7fb;
+  --panel: #101827;
+  --line: #243147;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.admin-shell {
+  display: grid;
+  gap: 24px;
+  padding: 32px;
+}
+
+.admin-shell header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell p {
+  margin: 0;
+}
+
+.admin-shell section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  background: var(--panel);
+}
+
+.admin-shell select {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 12px;
+  background: var(--panel);
+  color: var(--foreground);
+}

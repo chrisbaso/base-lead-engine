@@ -1,0 +1,21 @@
+{
+  "name": "@ble/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tenant-config": "./src/tenant-config/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ble/tenant-demo": "workspace:*",
+    "@ble/tenant-schema": "workspace:*",
+    "zod": "^3.24.3"
+  }
+}
