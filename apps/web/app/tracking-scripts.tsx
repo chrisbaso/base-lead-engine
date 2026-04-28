@@ -9,6 +9,7 @@ export function TrackingScripts({ tenant }: TrackingScriptsProps) {
   const gtmId = tenant.tracking.gtmContainerId;
   const metaPixelId = tenant.tracking.metaPixelId;
   const googleAdsId = tenant.tracking.googleAdsConversionId;
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   return (
     <>
@@ -54,6 +55,9 @@ export function TrackingScripts({ tenant }: TrackingScriptsProps) {
           });
         `}
       </Script>
+      {turnstileSiteKey ? (
+        <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
+      ) : null}
     </>
   );
 }

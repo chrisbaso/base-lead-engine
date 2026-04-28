@@ -1,22 +1,18 @@
-import { listTenantConfigs } from "@ble/core/tenant-config";
+import { AdminShell, Metric, MetricGrid } from "./admin-shell";
 
 export default function AdminHomePage() {
-  const tenants = listTenantConfigs();
-
   return (
-    <main className="admin-shell">
-      <header>
-        <h1>Lead Engine Admin</h1>
-        <select aria-label="Tenant">
-          {tenants.map((tenant) => (
-            <option key={tenant.identity.slug}>{tenant.identity.name}</option>
-          ))}
-        </select>
-      </header>
+    <AdminShell>
+      <MetricGrid>
+        <Metric label="Tenants" value="1" />
+        <Metric label="Open leads" value="0" />
+        <Metric label="Pending emails" value="0" />
+        <Metric label="CRM retries" value="0" />
+      </MetricGrid>
       <section>
         <h2>Phase 1 Foundation</h2>
-        <p>The admin deployment can load tenant configs and is ready for authenticated data views.</p>
+        <p>The admin dashboard shell is ready for tenant-scoped operational views.</p>
       </section>
-    </main>
+    </AdminShell>
   );
 }

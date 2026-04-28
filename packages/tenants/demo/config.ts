@@ -1,4 +1,5 @@
 import { defineTenantConfig } from "@ble/tenant-schema";
+import { demoSequences } from "./sequences";
 
 export default defineTenantConfig({
   identity: {
@@ -69,18 +70,51 @@ export default defineTenantConfig({
   },
   email: {
     fromAddress: "demo@example.com",
-    sequences: []
+    fromName: "Demo Lead Engine",
+    sequences: demoSequences
   },
   scoring: {
-    rules: [],
+    rules: [
+      {
+        field: "monthly_leads",
+        operator: "greaterThan",
+        value: 99,
+        points: 40,
+        reason: "High monthly lead target"
+      },
+      {
+        field: "launch_goal",
+        operator: "equals",
+        value: "Calculator funnel",
+        points: 20,
+        reason: "Calculator funnels usually indicate high commercial intent"
+      },
+      {
+        field: "company",
+        operator: "contains",
+        value: "",
+        points: 10,
+        reason: "Company provided"
+      }
+    ],
     qualifiedThreshold: 70
   },
   crm: {
-    provider: "none",
-    propertyMappings: {}
+    provider: "hubspot",
+    apiKeyEnv: "DEMO_HUBSPOT_PRIVATE_APP_TOKEN",
+    pipelineId: "demo-pipeline",
+    defaultStage: "appointmentscheduled",
+    listId: "demo-list",
+    propertyMappings: {
+      email: "email",
+      company: "company",
+      launch_goal: "launch_goal",
+      monthly_leads: "monthly_leads"
+    }
   },
   notifications: {
     ownerEmail: "owner@example.com",
+    fromAddress: "alerts@example.com",
     highScoreThreshold: 70
   }
 });

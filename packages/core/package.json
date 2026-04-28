@@ -9,6 +9,15 @@
     "./lead-capture/components": "./src/lead-capture/components.tsx",
     "./lead-capture/pipeline": "./src/lead-capture/pipeline.ts",
     "./lead-capture/schema": "./src/lead-capture/schema.ts",
+    "./email-engine": "./src/email-engine/index.ts",
+    "./crm-sync": "./src/crm-sync/index.ts",
+    "./lead-scoring": "./src/lead-scoring/index.ts",
+    "./notifications": "./src/notifications/index.ts",
+    "./logger": "./src/logger/index.ts",
+    "./retry": "./src/retry/index.ts",
+    "./rate-limit": "./src/rate-limit/index.ts",
+    "./bot-protection": "./src/bot-protection/index.ts",
+    "./error-tracking": "./src/error-tracking/index.ts",
     "./tracking": "./src/tracking/index.ts",
     "./tenant-config": "./src/tenant-config/index.ts"
   },
@@ -20,6 +29,7 @@
   },
   "dependencies": {
     "@ble/tenant-demo": "workspace:*",
+    "@ble/tenant-retirement": "workspace:*",
     "@ble/tenant-schema": "workspace:*",
     "@supabase/supabase-js": "^2.49.4",
     "react": "19.2.4",

@@ -29,8 +29,14 @@ function emitClientFallback(eventName: string, payload: Record<string, unknown>)
 
 export function LeadCaptureClient({ tenant }: LeadCaptureClientProps) {
   const tracking = useMemo(() => getClientTrackingConfig(tenant), [tenant]);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-  async function handleSubmit(payload: { fields: CaptureValues; stepId?: string; isPartial: boolean }) {
+  async function handleSubmit(payload: {
+    fields: CaptureValues;
+    stepId?: string;
+    isPartial: boolean;
+    botToken?: string;
+  }) {
     emitClientFallback(payload.isPartial ? "LeadStepCompleted" : "LeadCompleted", {
       stepId: payload.stepId,
       eventMappings: tracking.eventMappings
@@ -42,5 +48,5 @@ export function LeadCaptureClient({ tenant }: LeadCaptureClientProps) {
     });
   }
 
-  return <Quiz tenant={tenant} onSubmit={handleSubmit} />;
+  return <Quiz tenant={tenant} onSubmit={handleSubmit} {...(turnstileSiteKey ? { botProtectionSiteKey: turnstileSiteKey } : {})} />;
 }

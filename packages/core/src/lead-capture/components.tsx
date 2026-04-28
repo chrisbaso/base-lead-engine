@@ -9,12 +9,14 @@ export type LeadCaptureSubmit = (payload: {
   fields: CaptureValues;
   stepId?: string;
   isPartial: boolean;
+  botToken?: string;
 }) => Promise<void>;
 
 export type LeadCaptureProps = {
   tenant: TenantConfig;
   onSubmit: LeadCaptureSubmit;
   storageKey?: string;
+  botProtectionSiteKey?: string;
 };
 
 function readStoredValues(storageKey: string): CaptureValues {
@@ -31,7 +33,12 @@ function readStoredValues(storageKey: string): CaptureValues {
   return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as CaptureValues) : {};
 }
 
-function LeadCaptureShell({ tenant, onSubmit, storageKey = `ble:${tenant.identity.slug}:lead` }: LeadCaptureProps) {
+function LeadCaptureShell({
+  tenant,
+  onSubmit,
+  storageKey = `ble:${tenant.identity.slug}:lead`,
+  botProtectionSiteKey
+}: LeadCaptureProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [values, setValues] = useState<CaptureValues>(() => readStoredValues(storageKey));
   const [status, setStatus] = useState<"idle" | "submitting" | "complete">("idle");
@@ -65,8 +72,15 @@ function LeadCaptureShell({ tenant, onSubmit, storageKey = `ble:${tenant.identit
   async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("submitting");
+    const formData = new FormData(event.currentTarget);
+    const turnstileToken = formData.get("cf-turnstile-response");
     const isLastStep = stepIndex === steps.length - 1;
-    await onSubmit({ fields: values, stepId: activeStep.id, isPartial: !isLastStep });
+    await onSubmit({
+      fields: values,
+      stepId: activeStep.id,
+      isPartial: !isLastStep,
+      ...(typeof turnstileToken === "string" ? { botToken: turnstileToken } : {})
+    });
 
     if (isLastStep) {
       window.localStorage.removeItem(storageKey);
@@ -127,6 +141,7 @@ function LeadCaptureShell({ tenant, onSubmit, storageKey = `ble:${tenant.identit
           )}
         </label>
       ))}
+      {botProtectionSiteKey ? <div className="cf-turnstile" data-sitekey={botProtectionSiteKey} /> : null}
       <button type="submit" disabled={status === "submitting"}>
         {status === "complete" ? "Submitted" : stepIndex === steps.length - 1 ? "Get Demo Plan" : "Continue"}
       </button>

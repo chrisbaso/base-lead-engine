@@ -45,12 +45,32 @@ create table if not exists public.email_sends (
   lead_id uuid not null references public.leads(id) on delete cascade,
   sequence_id text not null,
   step_index integer not null,
+  recipient_email text not null,
+  subject text not null,
+  template text not null,
   status text not null default 'pending',
   scheduled_for timestamptz not null,
   sent_at timestamptz,
   provider_message_id text,
+  opened_at timestamptz,
+  clicked_at timestamptz,
+  bounced_at timestamptz,
   error text,
   created_at timestamptz not null default now()
+);
+
+create index if not exists email_sends_pending_idx
+on public.email_sends (scheduled_for)
+where status = 'pending';
+
+create table if not exists public.email_suppressions (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
+  email text not null,
+  reason text not null,
+  source text not null,
+  created_at timestamptz not null default now(),
+  unique (tenant_id, email)
 );
 
 create table if not exists public.crm_sync_log (
@@ -71,6 +91,7 @@ alter table public.tenants enable row level security;
 alter table public.leads enable row level security;
 alter table public.lead_events enable row level security;
 alter table public.email_sends enable row level security;
+alter table public.email_suppressions enable row level security;
 alter table public.crm_sync_log enable row level security;
 
 create or replace function public.current_tenant_id()
@@ -97,6 +118,11 @@ with check (tenant_id = public.current_tenant_id());
 
 create policy "tenant isolated email sends"
 on public.email_sends for all
+using (tenant_id = public.current_tenant_id())
+with check (tenant_id = public.current_tenant_id());
+
+create policy "tenant isolated email suppressions"
+on public.email_suppressions for all
 using (tenant_id = public.current_tenant_id())
 with check (tenant_id = public.current_tenant_id());
 

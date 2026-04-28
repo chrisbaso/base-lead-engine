@@ -1,8 +1,10 @@
 import demoConfig from "@ble/tenant-demo";
+import retirementConfig from "@ble/tenant-retirement";
 import { tenantConfigSchema, type TenantConfig } from "@ble/tenant-schema";
 
 const tenantConfigs: Record<string, TenantConfig> = {
-  demo: demoConfig
+  demo: demoConfig,
+  retirement: retirementConfig
 };
 
 const domainToSlug = new Map<string, string>(

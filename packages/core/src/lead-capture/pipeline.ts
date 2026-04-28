@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TenantConfig } from "@ble/tenant-schema";
+import { enqueueCrmSync } from "../crm-sync";
+import { scheduleEmailSequence } from "../email-engine";
+import { computeLeadScore } from "../lead-scoring";
+import { sendHighScoreNotification } from "../notifications";
 import { emitTrackingEvent, type TrackingRequest } from "../tracking";
 import { leadSubmissionSchema, validateLeadFields, type LeadSubmissionResult } from "./schema";
 
@@ -21,6 +25,7 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
 
   const email = typeof fields.email === "string" ? fields.email : null;
   const phone = typeof fields.phone === "string" ? fields.phone : null;
+  const scoreResult = computeLeadScore(options.tenant, fields);
 
   const { data, error } = await options.supabase
     .from("leads")
@@ -30,6 +35,7 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
         email,
         phone,
         status: parsed.isPartial ? "partial" : "new",
+        score: scoreResult.score,
         source: parsed.source,
         data: fields,
         updated_at: new Date().toISOString()
@@ -76,6 +82,39 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
     },
     ...options.trackingContext
   });
+
+  if (!parsed.isPartial && email) {
+    await scheduleEmailSequence({
+      supabase: options.supabase,
+      tenant: options.tenant,
+      lead: {
+        id: leadId,
+        email,
+        score: scoreResult.score,
+        data: fields
+      }
+    });
+
+    await enqueueCrmSync({
+      supabase: options.supabase,
+      tenant: options.tenant,
+      leadId,
+      payload: fields
+    });
+
+    if (scoreResult.score >= options.tenant.notifications.highScoreThreshold) {
+      await sendHighScoreNotification({
+        tenant: options.tenant,
+        notification: {
+          leadId,
+          email,
+          score: scoreResult.score,
+          reasons: scoreResult.reasons
+        },
+        resendApiKey: process.env.RESEND_API_KEY
+      });
+    }
+  }
 
   return {
     leadId,

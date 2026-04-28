@@ -106,6 +106,9 @@ importers:
       '@ble/tenant-demo':
         specifier: workspace:*
         version: link:../tenants/demo
+      '@ble/tenant-retirement':
+        specifier: workspace:*
+        version: link:../tenants/retirement
       '@ble/tenant-schema':
         specifier: workspace:*
         version: link:../tenants/_schema
@@ -135,6 +138,12 @@ importers:
         version: 3.25.76
 
   packages/tenants/demo:
+    dependencies:
+      '@ble/tenant-schema':
+        specifier: workspace:*
+        version: link:../_schema
+
+  packages/tenants/retirement:
     dependencies:
       '@ble/tenant-schema':
         specifier: workspace:*

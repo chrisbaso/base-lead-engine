@@ -70,12 +70,14 @@ export const tenantConfigSchema = z.object({
   }),
   email: z.object({
     fromAddress: z.string().email(),
+    fromName: z.string().min(1),
     sequences: z.array(
       z.object({
         id: z.string().min(1),
+        subject: z.string().min(1),
         delayHours: z.number().int().nonnegative(),
         template: z.string().min(1),
-        condition: z.string().optional()
+        condition: z.enum(["always", "qualified", "nurture"]).default("always")
       })
     )
   }),
@@ -85,19 +87,23 @@ export const tenantConfigSchema = z.object({
         field: z.string().min(1),
         operator: z.enum(["equals", "notEquals", "contains", "greaterThan", "lessThan"]),
         value: z.union([z.string(), z.number(), z.boolean()]),
-        points: z.number().int()
+        points: z.number().int(),
+        reason: z.string().min(1).optional()
       })
     ),
     qualifiedThreshold: z.number().int()
   }),
   crm: z.object({
     provider: z.enum(["hubspot", "salesforce", "gohighlevel", "none"]),
+    apiKeyEnv: z.string().optional(),
     pipelineId: z.string().optional(),
     defaultStage: z.string().optional(),
+    listId: z.string().optional(),
     propertyMappings: z.record(z.string())
   }),
   notifications: z.object({
     ownerEmail: z.string().email(),
+    fromAddress: z.string().email().optional(),
     slackWebhookUrl: z.string().url().optional(),
     highScoreThreshold: z.number().int()
   })

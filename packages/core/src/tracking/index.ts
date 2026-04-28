@@ -1,4 +1,5 @@
 import type { TenantConfig } from "@ble/tenant-schema";
+import { retryFetch } from "../retry";
 
 export type StandardTrackingEvent =
   | "PageView"
@@ -46,7 +47,7 @@ async function sendMetaCapi(request: TrackingRequest): Promise<TrackingResult> {
   }
 
   const mappedName = request.tenant.tracking.eventMappings[request.eventName]?.meta ?? request.eventName;
-  const response = await fetch(`https://graph.facebook.com/v21.0/${pixelId}/events`, {
+  const response = await retryFetch(`https://graph.facebook.com/v21.0/${pixelId}/events`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -82,7 +83,7 @@ async function sendGoogleEnhancedConversion(request: TrackingRequest): Promise<T
   }
 
   const mappedName = request.tenant.tracking.eventMappings[request.eventName]?.googleAds ?? request.eventName;
-  const response = await fetch(endpoint, {
+  const response = await retryFetch(endpoint, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
