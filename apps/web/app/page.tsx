@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { getTenantConfig, resolveTenantSlug } from "@ble/core/tenant-config";
 import { LeadCaptureClient } from "./lead-capture-client";
+import { TrackingScripts } from "./tracking-scripts";
 
 export default async function HomePage() {
   const headerList = await headers();
@@ -10,6 +11,7 @@ export default async function HomePage() {
 
   return (
     <main className="shell">
+      <TrackingScripts tenant={tenant} />
       <section className="hero" style={{ borderColor: tenant.branding.primaryColor }}>
         <p className="brand">{tenant.branding.logoText}</p>
         <h1>{tenant.leadCapture.headline}</h1>

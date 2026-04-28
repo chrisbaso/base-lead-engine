@@ -19,6 +19,7 @@ export default defineTenantConfig({
     metaAccessTokenEnv: "DEMO_META_ACCESS_TOKEN",
     googleAdsConversionId: "AW-DEMO",
     googleAdsConversionLabel: "demo_lead",
+    googleAdsEnhancedConversionsEndpoint: "https://example.com/google-enhanced-conversions",
     eventMappings: {
       PageView: { gtm: "page_view", meta: "PageView", googleAds: "page_view" },
       LeadStarted: { gtm: "lead_started", meta: "Lead", googleAds: "lead_started" },

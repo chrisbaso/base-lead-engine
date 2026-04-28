@@ -21,6 +21,10 @@ create table if not exists public.leads (
   updated_at timestamptz not null default now()
 );
 
+create unique index if not exists leads_tenant_email_unique
+on public.leads (tenant_id, email)
+where email is not null;
+
 create table if not exists public.lead_events (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
@@ -30,6 +34,10 @@ create table if not exists public.lead_events (
   payload jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+
+create unique index if not exists lead_events_tenant_event_id_unique
+on public.lead_events (tenant_id, event_id)
+where event_id is not null;
 
 create table if not exists public.email_sends (
   id uuid primary key default gen_random_uuid(),

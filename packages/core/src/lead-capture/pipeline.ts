@@ -24,26 +24,50 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
 
   const { data, error } = await options.supabase
     .from("leads")
-    .insert({
-      tenant_id: options.tenant.identity.tenantId,
-      email,
-      phone,
-      status: parsed.isPartial ? "partial" : "new",
-      source: parsed.source,
-      data: fields
-    })
+    .upsert(
+      {
+        tenant_id: options.tenant.identity.tenantId,
+        email,
+        phone,
+        status: parsed.isPartial ? "partial" : "new",
+        source: parsed.source,
+        data: fields,
+        updated_at: new Date().toISOString()
+      },
+      {
+        onConflict: "tenant_id,email",
+        ignoreDuplicates: false
+      }
+    )
     .select("id")
     .single<InsertedLead>();
 
   if (error) {
-    throw new Error(`Lead insert failed: ${error.message}`);
+    throw new Error(`Lead upsert failed: ${error.message}`);
   }
 
   const leadId = data.id;
 
+  const eventName = parsed.isPartial ? "LeadStarted" : "LeadCompleted";
+
+  const { error: eventError } = await options.supabase.from("lead_events").insert({
+      tenant_id: options.tenant.identity.tenantId,
+      lead_id: leadId,
+      event_name: eventName,
+      event_id: eventId,
+      payload: {
+        stepId: parsed.stepId,
+        fields
+      }
+    });
+
+  if (eventError) {
+    throw new Error(`Lead event insert failed: ${eventError.message}`);
+  }
+
   await emitTrackingEvent({
     tenant: options.tenant,
-    eventName: parsed.isPartial ? "LeadStarted" : "LeadCompleted",
+    eventName,
     eventId,
     leadId,
     payload: {
