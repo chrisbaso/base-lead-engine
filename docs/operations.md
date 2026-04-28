@@ -36,6 +36,13 @@
 2. Confirm the signed-in user's primary email exactly matches `CLERK_ADMIN_EMAIL`.
 3. If access fails during local builds, use `.env.local`; `.env.example` is documentation only.
 
+## Unsubscribe Links
+
+1. Set `UNSUBSCRIBE_SIGNING_SECRET` in every environment that sends email.
+2. Links generated without the secret are accepted only in environments where the secret is absent.
+3. If users report expired unsubscribe links, confirm the secret has not changed between email send and click.
+4. If the secret must rotate, keep the previous secret available during the oldest active sequence window or resend updated unsubscribe links.
+
 ## Logs And Errors
 
 - Application logs are structured JSON from `packages/core/src/logger`.

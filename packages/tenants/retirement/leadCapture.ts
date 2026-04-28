@@ -15,13 +15,24 @@ export const retirementLeadCapture = {
           id: "age",
           label: "Current Age",
           type: "number",
-          required: true
+          required: true,
+          helperText: "Ages 50–80",
+          validation: {
+            min: 50,
+            max: 80,
+            message: "Age must be between 50 and 80"
+          }
         },
         {
           id: "state",
           label: "State",
           type: "select",
           required: true,
+          validation: {
+            minLength: 2,
+            maxLength: 2,
+            message: "Please select your state"
+          },
           options: [
             "AL",
             "AK",
@@ -79,13 +90,25 @@ export const retirementLeadCapture = {
           id: "retirementSavings",
           label: "Estimated Retirement Savings ($)",
           type: "number",
-          required: true
+          required: true,
+          helperText: "Include 401(k), IRA, and other accounts",
+          validation: {
+            min: 1,
+            max: 50_000_000,
+            message: "Please enter valid retirement savings"
+          }
         },
         {
           id: "retirementAge",
           label: "Target Retirement Age",
           type: "number",
-          required: true
+          required: true,
+          helperText: "When you plan to start drawing income",
+          validation: {
+            min: 55,
+            max: 90,
+            message: "Retirement age must be between 55 and 90"
+          }
         }
       ]
     },
@@ -98,20 +121,30 @@ export const retirementLeadCapture = {
           id: "firstName",
           label: "First Name",
           type: "text",
-          required: true
+          required: true,
+          validation: {
+            minLength: 1,
+            maxLength: 50,
+            message: "Please enter your first name"
+          }
         },
         {
           id: "email",
           label: "Email Address",
           type: "email",
           required: true,
+          helperText: "We'll send a copy of your income snapshot to this address.",
+          validation: {
+            message: "Please enter a valid email address"
+          },
           capturePartial: true
         },
         {
           id: "phone",
           label: "Phone Number",
           type: "tel",
-          required: false
+          required: false,
+          helperText: "Optional — only if you'd like a personalized review call."
         }
       ]
     },

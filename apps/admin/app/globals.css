@@ -162,3 +162,41 @@ pre {
   border-radius: 999px;
   background: #1d2a3f;
 }
+
+.empty-state {
+  display: grid;
+  gap: 6px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  margin-top: 16px;
+  padding: 18px;
+  color: #8ea4c2;
+}
+
+.empty-state strong {
+  color: var(--foreground);
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.timeline {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.timeline article {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.timeline span {
+  color: #8ea4c2;
+  font-size: 13px;
+}

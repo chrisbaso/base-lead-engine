@@ -136,3 +136,9 @@ values ('11111111-1111-4111-8111-111111111111', 'demo', 'Demo Lead Engine', 'dem
 on conflict (slug) do update
 set name = excluded.name,
     primary_domain = excluded.primary_domain;
+
+insert into public.tenants (id, slug, name, primary_domain)
+values ('22222222-2222-4222-8222-222222222222', 'retirement', 'Retirement Income Review', 'retirement.localhost')
+on conflict (slug) do update
+set name = excluded.name,
+    primary_domain = excluded.primary_domain;

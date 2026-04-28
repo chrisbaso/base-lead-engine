@@ -47,9 +47,18 @@ importers:
       '@ble/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ble/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@ble/tenant-schema':
+        specifier: workspace:*
+        version: link:../../packages/tenants/_schema
       '@clerk/nextjs':
         specifier: ^6.19.0
         version: 6.39.3(next@15.5.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@supabase/supabase-js':
+        specifier: ^2.49.4
+        version: 2.105.1
       next:
         specifier: 15.5.7
         version: 15.5.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

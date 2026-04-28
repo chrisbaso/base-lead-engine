@@ -1,11 +1,16 @@
-import { getTenantConfig } from "@ble/core/tenant-config";
 import { AdminShell } from "../admin-shell";
+import { resolveAdminTenant } from "../data";
 
-export default function ConfigPage() {
-  const tenant = getTenantConfig("demo");
+type ConfigPageProps = {
+  searchParams: Promise<{ tenant?: string }>;
+};
+
+export default async function ConfigPage({ searchParams }: ConfigPageProps) {
+  const params = await searchParams;
+  const tenant = resolveAdminTenant(params.tenant);
 
   return (
-    <AdminShell>
+    <AdminShell selectedTenantSlug={tenant.identity.slug}>
       <section>
         <h2>Tenant Config</h2>
         <pre>{JSON.stringify(tenant, null, 2)}</pre>

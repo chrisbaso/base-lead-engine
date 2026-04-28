@@ -5,6 +5,16 @@ export const fieldSchema = z.object({
   label: z.string().min(1),
   type: z.enum(["text", "email", "tel", "number", "select", "checkbox"]),
   required: z.boolean().default(false),
+  helperText: z.string().optional(),
+  validation: z
+    .object({
+      min: z.number().optional(),
+      max: z.number().optional(),
+      minLength: z.number().int().positive().optional(),
+      maxLength: z.number().int().positive().optional(),
+      message: z.string().optional()
+    })
+    .optional(),
   options: z.array(z.string().min(1)).optional(),
   capturePartial: z.boolean().default(false)
 });

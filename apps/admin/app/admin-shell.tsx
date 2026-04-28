@@ -9,7 +9,10 @@ const navItems = [
   { href: "/config", label: "Config" }
 ];
 
-export function AdminShell({ children }: Readonly<{ children: React.ReactNode }>) {
+export function AdminShell({
+  children,
+  selectedTenantSlug
+}: Readonly<{ children: React.ReactNode; selectedTenantSlug?: string }>) {
   const tenants = listTenantConfigs();
 
   return (
@@ -19,9 +22,11 @@ export function AdminShell({ children }: Readonly<{ children: React.ReactNode }>
           <p className="eyebrow">Base Lead Engine</p>
           <h1>Operations</h1>
         </div>
-        <select aria-label="Tenant">
+        <select aria-label="Tenant" defaultValue={selectedTenantSlug ?? tenants[0]?.identity.slug}>
           {tenants.map((tenant) => (
-            <option key={tenant.identity.slug}>{tenant.identity.name}</option>
+            <option key={tenant.identity.slug} value={tenant.identity.slug}>
+              {tenant.identity.name}
+            </option>
           ))}
         </select>
       </header>
@@ -47,5 +52,14 @@ export function Metric({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </article>
+  );
+}
+
+export function EmptyState({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="empty-state">
+      <strong>{title}</strong>
+      <p>{body}</p>
+    </div>
   );
 }

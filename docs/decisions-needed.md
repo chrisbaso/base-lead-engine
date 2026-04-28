@@ -1,11 +1,5 @@
 # Decisions Needed
 
-## Phase 1 Defaults
-
-- **Admin Supabase access model:** Defaulted to service-role reads in future admin data loaders, gated by Clerk allowlist. This preserves tenant RLS for public funnel paths while letting the owner dashboard span tenants.
-- **Tenant claim strategy:** Defaulted to `request.jwt.claims.tenant_id` for RLS. If Clerk JWT templates are used, add the active tenant ID claim there.
-- **Next.js version:** Requirement says Next.js 15. Pinned `next@15.5.7`, the patched 15.x line documented as safe for App Router deployments.
-
 ## Environment Blockers
 
 - **Git push remote missing**
@@ -24,33 +18,6 @@
   - Command blocked: `takeown /F .git /R /D Y`
   - Why it was needed: `.git` has an explicit DENY ACL for orphan SID `S-1-5-21-2268178018-374602974-933321352-2642198855`, which prevents Git from creating `.git/index.lock`.
   - Workaround used: none from this non-elevated session. Run the ACL repair from an Administrator terminal, then retry `git add`, `git commit`, and `git push`.
-
-## Phase 2 Defaults
-
-- **Google Enhanced Conversions transport:** Defaulted to a tenant-configurable HTTPS endpoint because no Google Ads API OAuth/client credential strategy exists in the workspace. The interface is isolated in `packages/core/src/tracking/index.ts` so it can be swapped for direct Google Ads API calls once credentials and account shape are known.
-- **Pre-email partial leads:** Defaulted to localStorage only until an email is captured. This avoids creating anonymous database rows that cannot be nurtured or deduplicated.
-
-## Phase 3 Defaults
-
-- **Resend SDK dependency:** Used direct Resend REST API calls instead of adding the SDK because the interface is small and this avoids another runtime client at module scope. The wrapper lives in `packages/core/src/email-engine/index.ts`.
-- **Unsubscribe token:** Defaulted to tenant ID plus email query parameters for the MVP unsubscribe link. Phase 6 should replace this with a signed token once the shared app secret strategy is finalized.
-
-## Phase 4 Defaults
-
-- **HubSpot association IDs:** Defaulted to HubSpot-defined association type ID `3` for deal-to-contact and `202` for note-to-contact. Verify these against the staging portal before production sync.
-- **Demo CRM identifiers:** Used placeholder demo pipeline, stage, list, and private app token env names so the adapter can build and test without live credentials.
-
-## Phase 5 Defaults
-
-- **Admin build fallback key:** Added a non-secret Clerk publishable-key fallback for local/build environments where `.env` is absent. Production deployments must set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `CLERK_ADMIN_EMAIL`.
-- **Admin data source:** Used static/demo admin MVP views until staging Supabase credentials are available. The lead tables already persist scores, events, email sends, and CRM logs for the real data loaders.
-- **High-score notifications:** Defaulted to Slack webhook plus Resend email only when tenant notification credentials are configured. Missing credentials skip delivery instead of failing lead capture.
-
-## Phase 6 Defaults
-
-- **Rate limiting provider:** Defaulted to Upstash Redis REST for production and in-memory counters for local development when Upstash env vars are absent.
-- **Bot protection:** Defaulted to Cloudflare Turnstile and only enforces verification when `TURNSTILE_SECRET_KEY` is configured. Partial saves remain rate-limited but do not require Turnstile tokens.
-- **Sentry integration:** Used direct Sentry envelope ingestion via `SENTRY_DSN` instead of adding `@sentry/nextjs` while credentials are absent. Consider the SDK before launch if source map upload and release tracking are required.
 
 ## Phase 8 Blocker
 
@@ -76,3 +43,4 @@
 - **Tracking IDs missing:** Source shows GTM/dataLayer, Meta Pixel, and gtag helpers but no concrete GTM container, Pixel ID, Google Ads ID, or conversion labels.
 - **CRM source missing:** Source uses generated lead create hooks but does not show CRM/Zapier integration details. Retirement CRM is disabled in config until mappings are verified.
 - **Calendly placeholder:** Source uses `https://calendly.com/your-link-here`; replace before staging.
+- **Retirement UX parity:** Tenant config now preserves calculator fields, copy, validation metadata, scoring, and helper text. The original gated estimate/results/refine/booking UI still requires a custom renderer before cutover.

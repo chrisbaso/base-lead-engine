@@ -107,6 +107,7 @@ function LeadCaptureShell({
       {activeStep.fields.map((field) => (
         <label key={field.id}>
           <span>{field.label}</span>
+          {field.helperText ? <small>{field.helperText}</small> : null}
           {field.type === "select" ? (
             <select
               name={field.id}

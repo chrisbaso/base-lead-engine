@@ -31,7 +31,10 @@ export function buildSubmissionSchema(tenant: TenantConfig) {
 
   for (const step of tenant.leadCapture.steps) {
     for (const field of step.fields) {
-      const baseSchema = field.type === "number" ? z.coerce.number() : z.string().trim();
+      const message = field.validation?.message;
+      const numberSchema = z.coerce.number();
+      const stringSchema = z.string().trim();
+      const baseSchema = field.type === "number" ? numberSchema : stringSchema;
       const withType =
         field.type === "email"
           ? z.string().trim().email()
@@ -39,7 +42,38 @@ export function buildSubmissionSchema(tenant: TenantConfig) {
             ? z.coerce.boolean()
             : baseSchema;
 
-      shape[field.id] = field.required ? withType : withType.optional().or(z.literal(""));
+      let withValidation: z.ZodType<unknown> = withType;
+
+      if (field.type === "number") {
+        let numberWithValidation = z.coerce.number();
+        if (typeof field.validation?.min === "number") {
+          numberWithValidation = numberWithValidation.min(field.validation.min, message);
+        }
+        if (typeof field.validation?.max === "number") {
+          numberWithValidation = numberWithValidation.max(field.validation.max, message);
+        }
+        withValidation = numberWithValidation;
+      }
+
+      if (field.type !== "number" && field.type !== "checkbox") {
+        let stringBase =
+          field.type === "email" ? z.string().trim().email(message) : z.string().trim();
+        if (typeof field.validation?.minLength === "number") {
+          stringBase = stringBase.min(field.validation.minLength, message);
+        }
+        if (typeof field.validation?.maxLength === "number") {
+          stringBase = stringBase.max(field.validation.maxLength, message);
+        }
+        let stringWithValidation: z.ZodType<string> = stringBase;
+        if (field.options) {
+          stringWithValidation = stringWithValidation.refine((value) => field.options?.includes(value) ?? false, {
+            message: message ?? "Please select a valid option"
+          });
+        }
+        withValidation = stringWithValidation;
+      }
+
+      shape[field.id] = field.required ? withValidation : withValidation.optional().or(z.literal(""));
     }
   }
 

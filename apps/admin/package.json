@@ -12,7 +12,10 @@
   },
   "dependencies": {
     "@ble/core": "workspace:*",
+    "@ble/db": "workspace:*",
+    "@ble/tenant-schema": "workspace:*",
     "@clerk/nextjs": "^6.19.0",
+    "@supabase/supabase-js": "^2.49.4",
     "next": "15.5.7",
     "react": "19.2.4",
     "react-dom": "19.2.4"

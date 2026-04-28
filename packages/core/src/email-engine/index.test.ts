@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import demoTenant from "@ble/tenant-demo";
-import { buildUnsubscribeUrl, renderEmailHtml, scheduleEmailSequence } from "./index";
+import {
+  buildUnsubscribeUrl,
+  renderEmailHtml,
+  scheduleEmailSequence,
+  verifyUnsubscribeToken
+} from "./index";
 
 function createSupabaseStub() {
   let insertedRows = 0;
@@ -23,6 +28,10 @@ function createSupabaseStub() {
 }
 
 describe("email-engine", () => {
+  afterEach(() => {
+    delete process.env.UNSUBSCRIBE_SIGNING_SECRET;
+  });
+
   it("renders email html with unsubscribe link", () => {
     const unsubscribeUrl = buildUnsubscribeUrl("https://demo.test", demoTenant, "lead@example.com");
     const html = renderEmailHtml(
@@ -34,6 +43,17 @@ describe("email-engine", () => {
 
     expect(html).toContain("Acme");
     expect(html).toContain("Unsubscribe");
+  });
+
+  it("signs unsubscribe links when a signing secret is configured", () => {
+    process.env.UNSUBSCRIBE_SIGNING_SECRET = "test-secret";
+    const unsubscribeUrl = buildUnsubscribeUrl("https://demo.test", demoTenant, "Lead@Example.com");
+    const url = new URL(unsubscribeUrl);
+    const token = url.searchParams.get("token") ?? undefined;
+
+    expect(token).toBeTruthy();
+    expect(verifyUnsubscribeToken(demoTenant.identity.tenantId, "lead@example.com", token)).toBe(true);
+    expect(verifyUnsubscribeToken(demoTenant.identity.tenantId, "other@example.com", token)).toBe(false);
   });
 
   it("schedules the demo five-email sequence", async () => {

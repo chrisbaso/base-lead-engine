@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TenantConfig } from "@ble/tenant-schema";
 import { retryFetch } from "../retry";
@@ -55,7 +56,36 @@ export function buildUnsubscribeUrl(appUrl: string, tenant: TenantConfig, email:
   const url = new URL("/unsubscribe", appUrl);
   url.searchParams.set("tenant_id", tenant.identity.tenantId);
   url.searchParams.set("email", email);
+  const token = createUnsubscribeToken(tenant.identity.tenantId, email);
+  if (token) {
+    url.searchParams.set("token", token);
+  }
   return url.toString();
+}
+
+export function createUnsubscribeToken(tenantId: string, email: string): string | null {
+  const secret = process.env.UNSUBSCRIBE_SIGNING_SECRET;
+  if (!secret) {
+    return null;
+  }
+
+  return createHmac("sha256", secret).update(`${tenantId}:${email.toLowerCase()}`).digest("hex");
+}
+
+export function verifyUnsubscribeToken(tenantId: string, email: string, token: string | undefined): boolean {
+  const expected = createUnsubscribeToken(tenantId, email);
+  if (!expected) {
+    return true;
+  }
+
+  if (!token) {
+    return false;
+  }
+
+  const expectedBuffer = Buffer.from(expected, "hex");
+  const tokenBuffer = Buffer.from(token, "hex");
+
+  return expectedBuffer.length === tokenBuffer.length && timingSafeEqual(expectedBuffer, tokenBuffer);
 }
 
 export function renderEmailHtml(template: string, tenant: TenantConfig, lead: LeadEmailContext, unsubscribeUrl: string) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import demoTenant from "@ble/tenant-demo";
+import retirementTenant from "@ble/tenant-retirement";
 import { validateLeadFields } from "./schema";
 
 describe("validateLeadFields", () => {
@@ -21,6 +22,23 @@ describe("validateLeadFields", () => {
         monthly_leads: "50",
         email: "not-email",
         company: "Acme"
+      })
+    ).toThrow();
+  });
+
+  it("enforces tenant field validation rules", () => {
+    expect(() =>
+      validateLeadFields(retirementTenant, {
+        age: "49",
+        state: "MN",
+        retirementSavings: "250000",
+        retirementAge: "65",
+        firstName: "Jane",
+        email: "jane@example.com",
+        maritalStatus: "single",
+        retirementStatus: "working",
+        primaryConcern: "income_stability",
+        incomePreference: "guaranteed"
       })
     ).toThrow();
   });
