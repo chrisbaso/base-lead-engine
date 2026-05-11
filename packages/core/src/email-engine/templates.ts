@@ -6,6 +6,7 @@ type TemplateProps = {
   tenant: TenantConfig;
   lead: LeadEmailContext;
   unsubscribeUrl: string;
+  appUrl?: string | undefined;
 };
 
 const templateBody: Record<string, string[]> = {
@@ -41,22 +42,82 @@ function escapeHtml(value: string): string {
 }
 
 export function renderDemoEmailHtml(props: TemplateProps): string {
-  const body = templateBody[props.template] ?? templateBody.demoWelcome ?? [];
+  const context = buildTemplateContext(props);
+  const body = templateBody[props.template];
   const company = typeof props.lead.data.company === "string" ? props.lead.data.company : "your business";
-  const paragraphs = body
-    .map((paragraph) => `<p style="font-size:16px;line-height:1.6">${escapeHtml(paragraph)}</p>`)
-    .join("");
+  const title = body ? `Your plan for ${company}` : props.tenant.identity.name;
+  const paragraphs = body ? renderParagraphs(body) : renderTemplateString(props.template, context);
 
   return `<!doctype html>
 <html>
   <body style="margin:0;background:#f6f8fb;color:#172033;font-family:Arial,sans-serif">
     <main style="margin:0 auto;max-width:640px;padding:32px">
       <p style="color:${escapeHtml(props.tenant.branding.primaryColor)};font-weight:700">${escapeHtml(props.tenant.email.fromName)}</p>
-      <h1 style="font-size:28px;line-height:1.2">Your plan for ${escapeHtml(company)}</h1>
+      <h1 style="font-size:28px;line-height:1.2">${escapeHtml(title)}</h1>
       ${paragraphs}
       <p style="font-size:14px;line-height:1.5;color:#5c6a7d">You are receiving this because you requested information from ${escapeHtml(props.tenant.identity.name)}.</p>
       <p><a href="${escapeHtml(props.unsubscribeUrl)}">Unsubscribe</a></p>
     </main>
   </body>
 </html>`;
+}
+
+function renderParagraphs(paragraphs: string[]): string {
+  return paragraphs
+    .map((paragraph) => `<p style="font-size:16px;line-height:1.6">${escapeHtml(paragraph)}</p>`)
+    .join("");
+}
+
+function renderTemplateString(template: string, context: Record<string, string>): string {
+  const interpolated = template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_match, key: string) => context[key] ?? "");
+  return interpolated
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => {
+      const html = escapeHtml(paragraph).replaceAll("\n", "<br />");
+      return `<p style="font-size:16px;line-height:1.6">${linkifyAffiliateUrl(html, context.affiliateUrl ?? "")}</p>`;
+    })
+    .join("");
+}
+
+function buildTemplateContext(props: TemplateProps): Record<string, string> {
+  const leadData = Object.fromEntries(
+    Object.entries(props.lead.data)
+      .filter((entry): entry is [string, string | number | boolean] =>
+        typeof entry[1] === "string" || typeof entry[1] === "number" || typeof entry[1] === "boolean"
+      )
+      .map(([key, value]) => [key, String(value)])
+  );
+  const platformId = leadData.recommendedPlatformId;
+  const affiliateUrl =
+    props.appUrl && platformId
+      ? buildAffiliateClickUrl(props.appUrl, props.tenant.identity.slug, props.lead.id, platformId)
+      : "";
+
+  return {
+    ...leadData,
+    firstName: leadData.firstName || "there",
+    recommendedSoftware: leadData.recommendedSoftware || "the recommended platform",
+    recommendationReason: leadData.recommendationReason || "it best matches the way your team works today",
+    affiliateUrl,
+    unsubscribeUrl: props.unsubscribeUrl,
+    tenantName: props.tenant.identity.name
+  };
+}
+
+function buildAffiliateClickUrl(appUrl: string, tenantSlug: string, leadId: string, platformId: string): string {
+  const url = new URL(`/api/affiliate/${platformId}`, appUrl);
+  url.searchParams.set("tenant", tenantSlug);
+  url.searchParams.set("lead_id", leadId);
+  return url.toString();
+}
+
+function linkifyAffiliateUrl(html: string, affiliateUrl: string): string {
+  if (!affiliateUrl) {
+    return html;
+  }
+
+  const escapedUrl = escapeHtml(affiliateUrl);
+  return html.replaceAll(escapedUrl, `<a href="${escapedUrl}">${escapedUrl}</a>`);
 }

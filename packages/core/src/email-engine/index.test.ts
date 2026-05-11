@@ -45,6 +45,29 @@ describe("email-engine", () => {
     expect(html).toContain("Unsubscribe");
   });
 
+  it("renders text templates with lead placeholders and affiliate click links", () => {
+    const html = renderEmailHtml(
+      "Hi {firstName},\n\nStart with {recommendedSoftware}: {affiliateUrl}",
+      demoTenant,
+      {
+        id: "lead-1",
+        email: "lead@example.com",
+        score: 0,
+        data: {
+          firstName: "Sam",
+          recommendedPlatformId: "jobber",
+          recommendedSoftware: "Jobber"
+        }
+      },
+      "https://demo.test/unsubscribe",
+      "https://demo.test"
+    );
+
+    expect(html).toContain("Hi Sam");
+    expect(html).toContain("Jobber");
+    expect(html).toContain("/api/affiliate/jobber");
+  });
+
   it("signs unsubscribe links when a signing secret is configured", () => {
     process.env.UNSUBSCRIBE_SIGNING_SECRET = "test-secret";
     const unsubscribeUrl = buildUnsubscribeUrl("https://demo.test", demoTenant, "Lead@Example.com");

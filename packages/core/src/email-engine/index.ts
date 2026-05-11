@@ -34,6 +34,7 @@ type RunOptions = {
   batchSize?: number;
   resendApiKey: string | undefined;
   appUrl: string;
+  leadId?: string;
 };
 
 type ResendResult = {
@@ -88,8 +89,14 @@ export function verifyUnsubscribeToken(tenantId: string, email: string, token: s
   return expectedBuffer.length === tokenBuffer.length && timingSafeEqual(expectedBuffer, tokenBuffer);
 }
 
-export function renderEmailHtml(template: string, tenant: TenantConfig, lead: LeadEmailContext, unsubscribeUrl: string) {
-  return renderDemoEmailHtml({ template, tenant, lead, unsubscribeUrl });
+export function renderEmailHtml(
+  template: string,
+  tenant: TenantConfig,
+  lead: LeadEmailContext,
+  unsubscribeUrl: string,
+  appUrl?: string
+) {
+  return renderDemoEmailHtml({ template, tenant, lead, unsubscribeUrl, appUrl });
 }
 
 export async function scheduleEmailSequence(options: ScheduleOptions): Promise<number> {
@@ -134,11 +141,17 @@ export async function scheduleEmailSequence(options: ScheduleOptions): Promise<n
 
 export async function runDueEmailSends(options: RunOptions): Promise<{ processed: number; sent: number; skipped: number }> {
   const now = options.now ?? new Date();
-  const { data, error } = await options.supabase
+  let query = options.supabase
     .from("email_sends")
     .select("id, tenant_id, lead_id, recipient_email, subject, template, sequence_id")
     .eq("status", "pending")
-    .lte("scheduled_for", now.toISOString())
+    .lte("scheduled_for", now.toISOString());
+
+  if (options.leadId) {
+    query = query.eq("lead_id", options.leadId);
+  }
+
+  const { data, error } = await query
     .order("scheduled_for", { ascending: true })
     .limit(options.batchSize ?? 50)
     .overrideTypes<EmailSendRow[], { merge: false }>();
@@ -167,7 +180,7 @@ export async function runDueEmailSends(options: RunOptions): Promise<{ processed
 
     const lead = await getLeadEmailContext(options.supabase, row.lead_id);
     const unsubscribeUrl = buildUnsubscribeUrl(options.appUrl, tenant, row.recipient_email);
-    const html = renderEmailHtml(row.template, tenant, lead, unsubscribeUrl);
+    const html = renderEmailHtml(row.template, tenant, lead, unsubscribeUrl, options.appUrl);
     const result = await sendWithResend({
       apiKey: options.resendApiKey,
       from: `${tenant.email.fromName} <${tenant.email.fromAddress}>`,
@@ -182,6 +195,17 @@ export async function runDueEmailSends(options: RunOptions): Promise<{ processed
         .from("email_sends")
         .update({ status: "sent", sent_at: new Date().toISOString(), provider_message_id: result.id })
         .eq("id", row.id);
+      await recordEmailEvent(options.supabase, {
+        tenantId: row.tenant_id,
+        leadId: row.lead_id,
+        eventType: "email.sent",
+        metadata: {
+          emailSendId: row.id,
+          sequenceId: row.sequence_id,
+          providerMessageId: result.id,
+          recipientEmail: row.recipient_email
+        }
+      });
     } else {
       skipped += 1;
       await markEmailSend(options.supabase, row.id, "skipped", result.reason);
@@ -294,6 +318,7 @@ export async function handleResendWebhook(options: {
   eventType: string;
   messageId: string;
   recipientEmail: string;
+  metadata?: Record<string, unknown>;
 }) {
   const tenant = getTenantConfig(options.tenantSlug);
   const timestamp = new Date().toISOString();
@@ -306,8 +331,29 @@ export async function handleResendWebhook(options: {
           ? { bounced_at: timestamp, status: "bounced" }
           : {};
 
+  const { data: emailSend } = await options.supabase
+    .from("email_sends")
+    .select("id, tenant_id, lead_id, sequence_id")
+    .eq("provider_message_id", options.messageId)
+    .maybeSingle<{ id: string; tenant_id: string; lead_id: string; sequence_id: string }>();
+
   if (Object.keys(update).length > 0) {
     await options.supabase.from("email_sends").update(update).eq("provider_message_id", options.messageId);
+  }
+
+  if (emailSend && (options.eventType === "email.opened" || options.eventType === "email.clicked")) {
+    await recordEmailEvent(options.supabase, {
+      tenantId: emailSend.tenant_id,
+      leadId: emailSend.lead_id,
+      eventType: options.eventType,
+      metadata: {
+        emailSendId: emailSend.id,
+        sequenceId: emailSend.sequence_id,
+        providerMessageId: options.messageId,
+        recipientEmail: options.recipientEmail,
+        ...options.metadata
+      }
+    });
   }
 
   if (options.eventType === "email.bounced") {
@@ -318,5 +364,26 @@ export async function handleResendWebhook(options: {
       reason: "bounce",
       source: "resend-webhook"
     });
+  }
+}
+
+async function recordEmailEvent(
+  supabase: SupabaseClient,
+  event: {
+    tenantId: string;
+    leadId: string;
+    eventType: string;
+    metadata: Record<string, unknown>;
+  }
+) {
+  const { error } = await supabase.from("events").insert({
+    tenant_id: event.tenantId,
+    lead_id: event.leadId,
+    event_type: event.eventType,
+    metadata: event.metadata
+  });
+
+  if (error) {
+    throw new Error(`Email event insert failed: ${error.message}`);
   }
 }
