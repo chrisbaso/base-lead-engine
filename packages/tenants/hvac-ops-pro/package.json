@@ -1,0 +1,21 @@
+{
+  "name": "@ble/tenant-hvac-ops-pro",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./config.ts",
+    "./copy": "./copy.ts",
+    "./lib/recommendation-engine": "./lib/recommendation-engine.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ble/tenant-schema": "workspace:*"
+  },
+  "devDependencies": {}
+}

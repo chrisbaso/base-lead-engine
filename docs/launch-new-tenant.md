@@ -54,3 +54,29 @@ Goal: go from offer idea to live funnel in under four hours without changing sha
    - first email is scheduled
    - CRM sync row is queued and processed
    - high-score notification fires when threshold is met
+
+## Launching An Advisor Site
+
+Use `packages/tenants/smart-retirement-mn/` as the canonical starting point for a financial advisor website tenant.
+
+1. Copy `packages/tenants/smart-retirement-mn` to `packages/tenants/<advisor-slug>`.
+2. Update the package name to `@ble/tenant-<advisor-slug>`.
+3. Replace all deploy-blocking placeholders:
+   - firm name
+   - CRD/IARD number
+   - advisor name and title
+   - states licensed
+   - primary domain
+   - BrokerCheck URL
+   - Form ADV Part 2A URL
+   - privacy policy URL
+   - scheduling URL
+   - approved advisor photo URL
+   - owner notification email
+   - from address
+4. Update `content`, `compliance`, and `calculator` in `config.ts`.
+5. Register the tenant in `packages/core/src/tenant-config/index.ts`.
+6. Add a Supabase `tenants` row migration for the new tenant ID.
+7. Run the full verification suite and smoke the site with `TENANT_SLUG=<advisor-slug>`.
+
+For the current local build, the advisor calculator is a browser-local experience and does not create leads until the lead wiring is intentionally enabled.
