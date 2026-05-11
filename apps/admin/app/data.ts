@@ -42,6 +42,15 @@ export type FunnelStats = {
   sources: Record<string, number>;
 };
 
+export type TenantDashboardStats = {
+  totalLeads: number;
+  quizCompletionRate: number;
+  emailOpenRate: number;
+  emailClickRate: number;
+  affiliateClicks: number;
+  estimatedConversions: number;
+};
+
 export type AdminOverview = {
   tenants: number;
   openLeads: number;
@@ -220,4 +229,73 @@ export async function getEmailSendStats(tenant: TenantConfig): Promise<AdminData
       suppressed: suppressions.count ?? 0
     }
   };
+}
+
+export async function getTenantDashboardStats(
+  tenant: TenantConfig
+): Promise<AdminDataState<TenantDashboardStats>> {
+  const client = getServiceClient();
+  if (client.status === "unavailable") {
+    return client;
+  }
+
+  const [leads, leadEvents, emailSends, events] = await Promise.all([
+    client.data
+      .from("leads")
+      .select("id, status")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .overrideTypes<Array<{ id: string; status: string }>, { merge: false }>(),
+    client.data
+      .from("lead_events")
+      .select("event_name")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .overrideTypes<Array<{ event_name: string }>, { merge: false }>(),
+    client.data
+      .from("email_sends")
+      .select("status, opened_at, clicked_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .overrideTypes<Array<{ status: string; opened_at: string | null; clicked_at: string | null }>, { merge: false }>(),
+    client.data
+      .from("events")
+      .select("event_type")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .overrideTypes<Array<{ event_type: string }>, { merge: false }>()
+  ]);
+
+  const error = leads.error ?? leadEvents.error ?? emailSends.error ?? events.error;
+  if (error) {
+    return { status: "unavailable", reason: error.message };
+  }
+
+  const leadRows = leads.data ?? [];
+  const leadEventRows = leadEvents.data ?? [];
+  const emailSendRows = emailSends.data ?? [];
+  const eventRows = events.data ?? [];
+  const totalLeads = leadRows.filter((lead) => lead.status !== "partial").length;
+  const partialEvents = leadEventRows.filter((event) => event.event_name !== "LeadCompleted").length;
+  const completedEvents = leadEventRows.filter((event) => event.event_name === "LeadCompleted").length;
+  const sentEmails = emailSendRows.filter((send) => send.status === "sent").length;
+  const openedEmails = emailSendRows.filter((send) => send.opened_at).length;
+  const clickedEmails = emailSendRows.filter((send) => send.clicked_at).length;
+  const affiliateClicks = eventRows.filter((event) => event.event_type === "affiliate.clicked").length;
+
+  return {
+    status: "ready",
+    data: {
+      totalLeads,
+      quizCompletionRate: ratio(completedEvents, completedEvents + partialEvents),
+      emailOpenRate: ratio(openedEmails, sentEmails),
+      emailClickRate: ratio(clickedEmails, sentEmails),
+      affiliateClicks,
+      estimatedConversions: Math.round(affiliateClicks * 0.12)
+    }
+  };
+}
+
+function ratio(numerator: number, denominator: number) {
+  if (denominator === 0) {
+    return 0;
+  }
+
+  return Math.round((numerator / denominator) * 100);
 }
