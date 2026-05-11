@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TenantConfig } from "@ble/tenant-schema";
 import { enqueueCrmSync } from "../crm-sync";
-import { scheduleEmailSequence } from "../email-engine";
+import { runDueEmailSends, scheduleEmailSequence } from "../email-engine";
 import { computeLeadScore } from "../lead-scoring";
 import { sendHighScoreNotification } from "../notifications";
 import { emitTrackingEvent, type TrackingRequest } from "../tracking";
@@ -12,6 +12,10 @@ type LeadPipelineOptions = {
   tenant: TenantConfig;
   submission: unknown;
   trackingContext?: Pick<TrackingRequest, "clientIp" | "userAgent">;
+  immediateEmail?: {
+    appUrl: string;
+    resendApiKey: string | undefined;
+  };
 };
 
 type InsertedLead = {
@@ -25,6 +29,9 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
 
   const email = typeof fields.email === "string" ? fields.email : null;
   const phone = typeof fields.phone === "string" ? fields.phone : null;
+  const firstName = typeof fields.firstName === "string" ? fields.firstName : null;
+  const recommendedSoftware =
+    typeof fields.recommendedSoftware === "string" ? fields.recommendedSoftware : null;
   const scoreResult = computeLeadScore(options.tenant, fields);
 
   const { data, error } = await options.supabase
@@ -38,6 +45,12 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
         score: scoreResult.score,
         source: parsed.source,
         data: fields,
+        first_name: firstName,
+        quiz_answers: options.tenant.leadCapture.type === "quiz" ? fields : {},
+        recommended_software: recommendedSoftware,
+        utm_source: parsed.source.utmSource,
+        utm_campaign: parsed.source.utmCampaign,
+        utm_content: parsed.source.utmContent,
         updated_at: new Date().toISOString()
       },
       {
@@ -63,7 +76,8 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
       event_id: eventId,
       payload: {
         stepId: parsed.stepId,
-        fields
+        fields,
+        source: parsed.source
       }
     });
 
@@ -78,10 +92,26 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
     leadId,
     payload: {
       stepId: parsed.stepId,
-      fields
+      fields,
+      source: parsed.source
     },
     ...options.trackingContext
   });
+
+  const { error: analyticsEventError } = await options.supabase.from("events").insert({
+    tenant_id: options.tenant.identity.tenantId,
+    lead_id: leadId,
+    event_type: eventName,
+    metadata: {
+      stepId: parsed.stepId,
+      fields,
+      source: parsed.source
+    }
+  });
+
+  if (analyticsEventError) {
+    throw new Error(`Analytics event insert failed: ${analyticsEventError.message}`);
+  }
 
   if (!parsed.isPartial && email) {
     await scheduleEmailSequence({
@@ -94,6 +124,16 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
         data: fields
       }
     });
+
+    if (options.immediateEmail) {
+      await runDueEmailSends({
+        supabase: options.supabase,
+        appUrl: options.immediateEmail.appUrl,
+        resendApiKey: options.immediateEmail.resendApiKey,
+        leadId,
+        batchSize: 5
+      });
+    }
 
     await enqueueCrmSync({
       supabase: options.supabase,

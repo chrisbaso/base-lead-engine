@@ -18,7 +18,8 @@ function readSource() {
       referrer: document.referrer || undefined,
       utmSource: params.get("utm_source") ?? undefined,
       utmMedium: params.get("utm_medium") ?? undefined,
-      utmCampaign: params.get("utm_campaign") ?? undefined
+      utmCampaign: params.get("utm_campaign") ?? undefined,
+      utmContent: params.get("utm_content") ?? undefined
     }).filter((entry): entry is [string, string] => typeof entry[1] === "string")
   );
 }

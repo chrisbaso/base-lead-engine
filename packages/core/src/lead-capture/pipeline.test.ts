@@ -63,6 +63,6 @@ describe("submitLead", () => {
     });
 
     expect(result).toEqual({ leadId: "lead-1", eventId: "event-1", isPartial: false });
-    expect(supabase.insertedTables).toEqual(["leads", "lead_events", "email_sends", "crm_sync_log"]);
+    expect(supabase.insertedTables).toEqual(["leads", "lead_events", "events", "email_sends", "crm_sync_log"]);
   });
 });

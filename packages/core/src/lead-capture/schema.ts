@@ -7,6 +7,7 @@ export const leadSourceSchema = z.object({
   utmSource: z.string().optional(),
   utmMedium: z.string().optional(),
   utmCampaign: z.string().optional(),
+  utmContent: z.string().optional(),
   userAgent: z.string().optional(),
   ipAddress: z.string().optional()
 });
@@ -77,7 +78,7 @@ export function buildSubmissionSchema(tenant: TenantConfig) {
     }
   }
 
-  return z.object(shape);
+  return z.object(shape).passthrough();
 }
 
 export function validateLeadFields(tenant: TenantConfig, fields: Record<string, unknown>) {

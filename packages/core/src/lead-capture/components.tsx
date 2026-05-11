@@ -46,6 +46,12 @@ function LeadCaptureShell({
   const steps = tenant.leadCapture.steps;
   const step = steps[stepIndex] ?? steps[0];
   const progress = useMemo(() => Math.round(((stepIndex + 1) / steps.length) * 100), [stepIndex, steps.length]);
+  const finalButtonLabel =
+    tenant.identity.slug === "hvac-ops-pro"
+      ? "Get My Recommendation"
+      : tenant.leadCapture.type === "calculator"
+        ? "Show My Result"
+        : "Get Demo Plan";
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(values));
@@ -144,7 +150,7 @@ function LeadCaptureShell({
       ))}
       {botProtectionSiteKey ? <div className="cf-turnstile" data-sitekey={botProtectionSiteKey} /> : null}
       <button type="submit" disabled={status === "submitting"}>
-        {status === "complete" ? "Submitted" : stepIndex === steps.length - 1 ? "Get Demo Plan" : "Continue"}
+        {status === "complete" ? "Submitted" : stepIndex === steps.length - 1 ? finalButtonLabel : "Continue"}
       </button>
       {showExitIntent ? (
         <div className="exit-intent" role="dialog" aria-label="Save progress">
