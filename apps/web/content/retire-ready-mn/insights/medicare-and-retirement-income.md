@@ -25,3 +25,21 @@ Planning prompts include:
 - Consider the surviving spouse's healthcare budget
 
 Healthcare planning is not just about choosing coverage. It is about making sure the retirement paycheck can absorb costs without forcing avoidable tax or investment decisions.
+
+Medicare planning belongs inside the income plan because premiums and coverage choices affect monthly cash flow. Part B premiums, Part D drug coverage, Medicare Supplement or Medicare Advantage premiums, dental care, vision care, hearing care, and prescriptions may all need a line in the budget. A household that only models travel and housing may underestimate the dependable income needed after 65.
+
+Income-related premium adjustments can also surprise retirees. Large IRA withdrawals, Roth conversions, capital gains, business income, or the sale of appreciated property can affect future Medicare premiums. The impact may show up after the tax year that created the income. That lag can make it harder to connect a planning move with the later premium change unless the household is tracking it.
+
+Minnesota households should also compare coverage through the lens of where they receive care. Snowbird travel, rural provider access, preferred clinics, prescriptions, and specialist networks can all matter. The lowest premium may not be the lowest cost if it creates coverage friction or unexpected out-of-pocket expenses. The income plan should include realistic healthcare spending, not just the premium printed on a comparison page.
+
+Long-term care should remain a separate planning topic. Medicare may cover limited skilled care under specific conditions, but it should not be treated as a general long-term care funding source. A household may choose to self-fund, use insurance, rely partly on home equity, or plan for family support. Each choice has tradeoffs, and each affects the retirement paycheck differently.
+
+Annual review matters because prescriptions, health status, plan options, and income can change. A retiree who had the right coverage last year may need a different approach this year. The review should coordinate health coverage, tax projections, withdrawal plans, and cash reserves so that healthcare decisions do not accidentally undermine the rest of the income strategy.
+
+A useful Medicare budget separates predictable costs from exposure. Premiums may be monthly and easy to list. Deductibles, copays, prescriptions, dental work, hearing aids, and travel-related care may be less predictable. The retirement paycheck should include both a recurring healthcare line and a reserve for irregular costs. Without that reserve, a medical bill can force an untimely portfolio withdrawal or a larger taxable distribution.
+
+Households should also consider how healthcare costs change after the first spouse dies. Premiums may fall for one person, but the survivor may lose pension income, face different tax brackets, and still need strong coverage. A plan that only models healthcare for the couple can miss the survivor's after-tax cash flow. Medicare decisions should therefore be reviewed with the same survivor lens used for Social Security and pension elections.
+
+The practical takeaway is simple: do not leave Medicare as a separate folder from the retirement plan. Coverage choices, taxable income, cash reserves, and survivor planning all affect one another. A better review brings those items onto the same page so the household can see the real monthly paycheck after healthcare costs.
+
+That integrated view is especially helpful before large tax moves, coverage changes, or the first year one spouse manages the plan alone.

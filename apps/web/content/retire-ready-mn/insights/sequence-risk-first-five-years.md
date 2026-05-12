@@ -26,3 +26,19 @@ Questions worth asking before retirement include:
 - How will Social Security timing affect portfolio withdrawals?
 
 Sequence risk cannot be eliminated, but it can be planned for. The best time to build the rules is before the first bad market of retirement.
+
+The first five years matter because the portfolio is usually largest and withdrawals are beginning. A market decline during that period can force the household to sell more shares to produce the same monthly income. If markets recover after too many shares have been sold, the portfolio may not fully recover with them. That is why the order of returns can matter as much as the average return.
+
+The defense starts with withdrawal flexibility. Essential spending should be protected as much as possible, while discretionary spending should have clear adjustment rules. For example, travel, vehicle upgrades, home remodeling, large gifts, and optional cabin improvements may be delayed after a major decline. The rule does not need to be severe. It needs to be written before emotions take over.
+
+A cash or short-term reserve can provide time for the portfolio to recover, but it should be connected to a refill rule. If markets are strong, the reserve may be replenished from gains. If markets are weak, withdrawals may come from the reserve while the portfolio is left alone. Without a refill rule, cash can become either too small to help or too large to support long-term growth.
+
+Social Security timing also affects sequence risk. Delaying benefits can increase future guaranteed income, but it may require larger portfolio withdrawals during the bridge years. Claiming earlier can reduce those bridge withdrawals but may lock in a lower lifetime benefit. The right comparison should test both the early-retirement market scenario and the later-life income scenario.
+
+Minnesota households should include real spending patterns in the sequence-risk review. A bad market year plus a roof replacement, health event, or property tax increase can create pressure that a smooth spreadsheet never showed. Planning for sequence risk means combining investment rules with cash flow rules, tax rules, and a list of expenses that can flex.
+
+The first review should happen before the retirement date, not after the first market decline. A household can model several starting conditions: strong first five years, flat first five years, and poor first five years. Then it can test how much spending would change, which account would fund withdrawals, and whether essential expenses remain covered. This turns sequence risk from an abstract fear into a set of decisions.
+
+The plan should also define when to seek help. If the portfolio falls by a certain amount, if withdrawals exceed a planned percentage, or if cash reserves drop below a target, the household may pause major spending and review the income map. Those triggers are not predictions. They are decision points. Retirement feels less fragile when the household knows what condition calls for action.
+
+Sequence planning is ultimately about buying time. Time for markets to recover, time for spending to adjust, and time for the household to make careful decisions instead of reactive ones.

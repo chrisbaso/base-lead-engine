@@ -28,3 +28,17 @@ Helpful checklist items include:
 - Coordinate with a qualified tax professional
 
 Retirement tax planning is not about avoiding every tax. It is about avoiding preventable surprises.
+
+The first step is to map income by source. Social Security, pensions, traditional IRA withdrawals, Roth withdrawals, taxable dividends, capital gains, bank interest, rental income, part-time work, and business income can all be taxed differently. A retirement income plan that only shows gross cash flow may look comfortable until federal taxes, Minnesota taxes, and Medicare-related thresholds are added.
+
+Timing matters because many households have a planning window after full-time work ends and before required minimum distributions begin. During that window, taxable income may be lower than it will be later. Roth conversions, capital gain harvesting, charitable giving strategies, and the timing of large purchases can be reviewed during those years. None of these moves should be automatic. The value depends on the household's current bracket, future bracket, cash needs, and Medicare timeline.
+
+Minnesota retirees should also pay attention to where account money sits. Traditional retirement accounts create taxable income when withdrawn. Roth accounts may provide tax-free qualified withdrawals. Taxable accounts may create capital gains or qualified dividends. Cash accounts may create interest. Having several account types can provide flexibility, but only if the withdrawal plan uses that flexibility intentionally.
+
+Couples need a surviving spouse tax review. When one spouse dies, the survivor may move from married filing jointly to single filing status. Income may not fall as much as the tax brackets change. Social Security survivor benefits, pension reductions, required distributions, and healthcare costs can all shift. A plan that works for a couple may create a heavier tax burden for the survivor.
+
+The checklist should end with coordination. Tax strategy should be reviewed with a qualified tax professional, but it should not be isolated from income planning. The tax-efficient move is not always the best retirement move if it creates too little liquidity, too much risk, or a healthcare premium surprise. The goal is steady after-tax income and fewer preventable tradeoffs.
+
+A practical checklist should be repeated every year, not only in the year of retirement. Tax rules change, income changes, account balances change, and required distribution ages may affect future planning. The household should update projected taxable income before taking large IRA withdrawals, realizing gains, selling property, or making a Roth conversion. A small review before the transaction is often easier than repairing the surprise later.
+
+Charitable giving can also affect the plan. Some retirees give from cash, some donate appreciated assets, and some eventually use qualified charitable distributions from IRAs when eligible. The right method depends on age, account type, tax situation, and giving goals. Like every other tax topic, charitable strategy should support the income plan rather than distract from it. The best result is not just a lower tax bill. It is a retirement paycheck that works after taxes are paid.

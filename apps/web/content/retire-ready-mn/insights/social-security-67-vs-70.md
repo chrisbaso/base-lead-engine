@@ -25,3 +25,21 @@ The practical comparison should include:
 - Required minimum distribution timing
 
 Many households do not need a perfect answer. They need to avoid making the decision in isolation. Social Security timing should sit inside the larger retirement income plan, beside taxes, cash reserves, and portfolio risk.
+
+The age-67 versus age-70 decision is often framed as a break-even calculation. That can be useful, but it is incomplete. A household does not spend a break-even age. It spends monthly cash flow. The better question is how each claiming age affects the retirement paycheck, portfolio withdrawals, taxes, survivor income, and confidence during market downturns.
+
+Delaying can be powerful when the bridge years are affordable. A larger age-70 benefit may reduce the pressure on investments later, especially if one spouse lives a long time. It can also strengthen survivor income because the surviving spouse may keep the larger benefit. For a couple, that survivor benefit can be one of the most important reasons to evaluate delaying.
+
+Claiming at 67 may be reasonable when the household needs income sooner, wants to reduce portfolio withdrawals, has health concerns, or has limited resources to fund the bridge to 70. The decision should not be treated as a failure to optimize. It may be the practical answer if waiting creates too much risk elsewhere in the plan.
+
+Taxes can change the comparison. Social Security benefits may be partly taxable depending on overall income. IRA withdrawals used to fund a delay can raise taxable income. Roth withdrawals may fund the bridge differently. Pension income, part-time work, and capital gains can all affect the final after-tax result. A gross benefit comparison is not enough.
+
+For Minnesotans, the review should also include healthcare and lifestyle timing. Retiring before Medicare, spending part of the winter elsewhere, helping family, or maintaining a second property can make the bridge years more expensive. The best claiming age is the one that fits the full household plan, not the one that wins a single calculator.
+
+A side-by-side projection can make the tradeoff easier to see. One column can show claiming at 67, with lower monthly benefits and lower bridge withdrawals. Another can show claiming at 70, with higher later benefits and larger withdrawals before benefits begin. The comparison should show after-tax income, portfolio balance ranges, survivor income, and how the retirement income score changes in each case.
+
+The decision should be revisited if circumstances change. A health diagnosis, job change, market decline, inheritance, home sale, or spouse's retirement date can all affect the answer. Filing for Social Security is a major income decision, but it is not made in a vacuum. The best time to decide is when the household can see the full cash flow picture and understand what each claiming age protects.
+
+That is especially true for couples. A claiming choice can affect not only the first years of retirement, but also the income available to the surviving spouse much later. The stronger decision is the one that considers both timelines.
+
+The goal is durable household income, not just the largest first check.
