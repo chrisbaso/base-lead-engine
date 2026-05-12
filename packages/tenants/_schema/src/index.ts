@@ -38,8 +38,84 @@ export const trackingEventNameSchema = z.enum([
   "LeadStarted",
   "LeadStepCompleted",
   "LeadCompleted",
-  "LeadQualified"
+  "LeadQualified",
+  "ViewContent"
 ]);
+
+const stateCodeSchema = z.string().regex(/^[A-Z]{2}$/);
+
+export const complianceSchema = z.object({
+  firmName: z.string().min(1),
+  crdNumber: z.string().regex(/^\d{3,8}$/),
+  advisorName: z.string().min(1),
+  advisorTitle: z.string().min(1),
+  statesLicensed: z.array(stateCodeSchema).min(1),
+  brokerCheckUrl: z.string().url(),
+  adv2Url: z.string().url(),
+  privacyPolicyUrl: z.string().url(),
+  disclosureFooter: z.string().min(20),
+  calculatorDisclosure: z.string().min(20),
+  requireStateGating: z.boolean().default(false),
+  unlicensedStateMessage: z
+    .string()
+    .default(
+      "We're not currently licensed to serve clients in {state}. You can find advisors who are at brokercheck.finra.org."
+    )
+});
+
+export const contentSchema = z.object({
+  hero: z.object({
+    headline: z.string().min(1),
+    subheadline: z.string().min(1),
+    ctaLabel: z.string().min(1)
+  }),
+  about: z.object({
+    firmStoryParagraphs: z.array(z.string().min(1)).min(1),
+    advisorBioParagraphs: z.array(z.string().min(1)).min(1),
+    photoUrl: z.string().url().optional(),
+    credentials: z.array(z.string().min(1))
+  }),
+  services: z.object({
+    items: z
+      .array(
+        z.object({
+          title: z.string().min(1),
+          description: z.string().min(1),
+          icon: z.string().min(1)
+        })
+      )
+      .min(1)
+  }),
+  socialProof: z.object({
+    clientsServed: z.string().optional(),
+    yearsInPractice: z.string().optional(),
+    statesLicensedCount: z.string().optional()
+  }),
+  insights: z
+    .array(
+      z.object({
+        category: z.string().min(1),
+        headline: z.string().min(1),
+        excerpt: z.string().min(1),
+        date: z.string().min(1)
+      })
+    )
+    .optional(),
+  schedulingUrl: z.string().url()
+});
+
+export const calculatorSchema = z.object({
+  formulaId: z.enum(["retirementIncome"]),
+  resultDisplay: z.object({
+    headline: z.string().min(1),
+    primaryMetricLabel: z.string().min(1),
+    primaryMetricFormat: z.enum(["currencyRange", "currency", "number"]),
+    lowLabel: z.string().min(1),
+    highLabel: z.string().min(1),
+    ctaLabel: z.string().min(1)
+  }),
+  assumptions: z.string().min(1)
+});
 
 export const tenantConfigSchema = z.object({
   identity: z.object({
@@ -87,7 +163,16 @@ export const tenantConfigSchema = z.object({
         subject: z.string().min(1),
         delayHours: z.number().int().nonnegative(),
         template: z.string().min(1),
-        condition: z.enum(["always", "qualified", "nurture"]).default("always")
+        condition: z.enum(["always", "qualified", "nurture"]).default("always"),
+        variants: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              subject: z.string().min(1),
+              template: z.string().min(1)
+            })
+          )
+          .optional()
       })
     )
   }),
@@ -116,7 +201,10 @@ export const tenantConfigSchema = z.object({
     fromAddress: z.string().email().optional(),
     slackWebhookUrl: z.string().url().optional(),
     highScoreThreshold: z.number().int()
-  })
+  }),
+  compliance: complianceSchema.optional(),
+  content: contentSchema.optional(),
+  calculator: calculatorSchema.optional()
 });
 
 export type TenantConfig = z.infer<typeof tenantConfigSchema>;

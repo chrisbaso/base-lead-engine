@@ -20,10 +20,9 @@ This is a Minnesota-targeted consumer retirement income estimator, branded
 annuity product — it's a top-of-funnel demand-creation play that captures
 leads via a lightweight financial estimator, then nurtures them via email
 toward an annuity conversation. Traffic is Facebook (primary, demand
-creation) with Google Ads as retargeting only. There is a HeyGen video
-placement on the results page. GTM and Meta Pixel fire throughout. An
-exit-intent modal captures abandoners. A drip email sequence is delivered
-via Resend.
+creation) with Google Ads as retargeting only. GTM and Meta Pixel fire
+throughout. An exit-intent modal captures abandoners. A drip email sequence
+is delivered via Resend.
 
 ## What to extract
 
@@ -153,16 +152,10 @@ preserve the Zapier dependency. The new platform calls HubSpot directly. Map
 the Zapier steps to direct API calls and document the change in the
 migration checklist.
 
-### 7. HeyGen video placement
-**Source:** results page or thank-you page.
-**Destination:** treat as a content block in the results page config.
+### 7. Video placement
 
-Extract:
-- HeyGen video URL or embed code
-- Where on the page it appears
-- Any controls (autoplay, mute, loop)
-
-Don't try to be clever about this — preserve the embed exactly.
+Video has been removed from scope. Do not migrate third-party video embeds or add a
+replacement video block unless a future prompt explicitly asks for one.
 
 ### 8. Exit-intent modal
 **Source:** likely a separate component listening for mouseleave at the top
@@ -192,7 +185,7 @@ When you encounter any of these, do NOT guess silently — log them:
    values — these are easy to break in migration.
 4. Any email that references specific products, carriers, or pricing —
    these need legal review before cutover.
-5. Any third-party script in the source that isn't GTM/Meta/Google/HeyGen.
+5. Any third-party script in the source that isn't GTM/Meta/Google.
    List it. Don't port it without confirmation.
 6. Any Zapier multi-step zap — list every step in order. The platform's CRM
    sync replaces some, but if a zap is doing something else (Slack

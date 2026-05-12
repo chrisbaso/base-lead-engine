@@ -9,6 +9,8 @@ import { logEvent } from "@ble/core/logger";
 import { enforceRateLimit } from "@ble/core/rate-limit";
 import { getTenantConfig, resolveTenantSlug } from "@ble/core/tenant-config";
 import { getSupabaseClient } from "@ble/db";
+import { resolveHvacExperimentAssignment } from "@ble/tenant-hvac-ops-pro/experiments";
+import { recommendHvacSoftware } from "@ble/tenant-hvac-ops-pro/lib/recommendation-engine";
 
 export async function submitLeadAction(input: {
   fields: CaptureValues;
@@ -20,6 +22,9 @@ export async function submitLeadAction(input: {
     utmSource?: string;
     utmMedium?: string;
     utmCampaign?: string;
+    utmContent?: string;
+    quizVariant?: string;
+    emailVariant?: string;
   };
   botToken?: string;
 }) {
@@ -30,6 +35,8 @@ export async function submitLeadAction(input: {
   const ipAddress = forwardedFor?.split(",")[0]?.trim();
   const userAgent = headerList.get("user-agent") ?? undefined;
   const rateLimitKey = ipAddress ?? input.fields.email?.toString() ?? "anonymous";
+  const appUrl = getAppUrl(headerList, host);
+  const fields = enrichTenantFields(tenant.identity.slug, input.fields, input.source);
 
   try {
     const rateLimit = await enforceRateLimit({
@@ -74,7 +81,7 @@ export async function submitLeadAction(input: {
       tenant,
       submission: {
         tenantId: tenant.identity.tenantId,
-        fields: input.fields,
+        fields,
         stepId: input.stepId,
         isPartial: input.isPartial,
         source: {
@@ -88,7 +95,15 @@ export async function submitLeadAction(input: {
           clientIp: ipAddress,
           userAgent
         }).filter((entry): entry is [string, string] => typeof entry[1] === "string")
-      )
+      ),
+      ...(tenant.identity.slug === "hvac-ops-pro"
+        ? {
+            immediateEmail: {
+              appUrl,
+              resendApiKey: process.env.RESEND_API_KEY
+            }
+          }
+        : {})
     });
   } catch (error) {
     await captureException(error, {
@@ -98,4 +113,51 @@ export async function submitLeadAction(input: {
     });
     throw error;
   }
+}
+
+function enrichTenantFields(
+  tenantSlug: string,
+  fields: CaptureValues,
+  source: { quizVariant?: string; emailVariant?: string } | undefined
+): CaptureValues {
+  if (tenantSlug !== "hvac-ops-pro") {
+    return fields;
+  }
+
+  const assignment = resolveHvacExperimentAssignment({
+    quizVariant: stringField(fields.quizVariant) ?? source?.quizVariant,
+    emailVariant: stringField(fields.emailVariant) ?? source?.emailVariant
+  });
+  const recommendation = recommendHvacSoftware({
+    teamSize: stringField(fields.teamSize),
+    biggestHeadache: stringField(fields.biggestHeadache),
+    usingSoftware: stringField(fields.usingSoftware),
+    currentSoftware: stringField(fields.currentSoftware),
+    monthlyRevenueRange: stringField(fields.monthlyRevenueRange),
+    firstName: stringField(fields.firstName),
+    email: stringField(fields.email)
+  });
+
+  return {
+    ...fields,
+    recommendedPlatformId: recommendation.platformId,
+    recommendedSoftware: recommendation.platformName,
+    recommendationReason: recommendation.reason,
+    affiliateEnvVar: recommendation.affiliateEnvVar,
+    quizVariant: assignment.quizVariant,
+    emailVariant: assignment.emailVariant
+  };
+}
+
+function stringField(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function getAppUrl(headerList: { get(name: string): string | null }, host: string): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  const protocol = headerList.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
+  return `${protocol}://${host}`;
 }

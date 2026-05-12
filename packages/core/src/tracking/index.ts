@@ -6,7 +6,8 @@ export type StandardTrackingEvent =
   | "LeadStarted"
   | "LeadStepCompleted"
   | "LeadCompleted"
-  | "LeadQualified";
+  | "LeadQualified"
+  | "ViewContent";
 
 export type TrackingRequest = {
   tenant: TenantConfig;

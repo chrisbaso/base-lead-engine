@@ -181,3 +181,92 @@ Built:
 
 Risks:
 - `docs/decisions-needed.md` now intentionally focuses on environment blockers, missing credentials/source, and retirement migration review items.
+
+## Advisor Site Template - Phase 0 Tooling Foundation
+
+Built:
+- Created the `codex-advisor-site-template` branch because implementation started from `master`.
+- Added Tailwind 3.4, PostCSS, and Autoprefixer to the workspace.
+- Added shared Tailwind configuration at the monorepo root plus per-app Tailwind and PostCSS entrypoints for `apps/web` and `apps/admin`.
+- Added Tailwind directives alongside the existing global CSS in both apps.
+- Added runtime tenant brand CSS variables on the web app `<html>` element: `--primary`, `--accent`, and `--brand-foreground`, with `data-theme` set from the tenant slug.
+- Added `packages/ui/components.json`, `packages/ui/src/lib/utils.ts`, and shadcn-generated shared components for button, card, input, label, slider, dialog, form, select, and progress.
+- Added the required shadcn runtime dependencies to `@ble/ui`, including Radix primitives, `class-variance-authority`, `tailwind-merge`, `react-hook-form`, and `lucide-react`.
+
+Skipped:
+- Phase 0 did not complete because the lint verification gate failed.
+- Did not run `pnpm test`, `pnpm build`, or browser verification after the lint failure, per the stop condition.
+- Did not attempt to fix the shadcn lint failures after the failed gate, per the stop condition.
+
+Verification:
+- `npx pnpm@10.11.1 typecheck` passed.
+- `npx pnpm@10.11.1 lint` failed in `@ble/ui`.
+
+Failure:
+- The generated shadcn files use deprecated `React.ElementRef` types, which this repo's ESLint rules reject under React 19.
+- Additional lint failures were reported for unnecessary template expressions/type conversions in `form.tsx` and a restricted template expression in `progress.tsx`.
+
+Risks:
+- The shadcn registry output is not immediately compatible with the repo's strict lint profile without a cleanup pass.
+- `docs/decisions-needed.md` had an existing uncommitted modification before this phase began and was intentionally left untouched except for preserving it in the working tree.
+
+## Advisor Site Template - Buildout Pass
+
+Built:
+- Cleaned up generated shadcn components so the repo's strict React 19 lint profile passes.
+- Added optional advisor `compliance`, `content`, and `calculator` schemas to tenant config.
+- Added a pure `retirementIncome` calculator registry with unit tests for typical, edge, invalid, and projection cases.
+- Added the `smart-retirement-mn` reference tenant package with README deploy blockers, config, copy, lead-capture fields, scoring rules, nurture sequence copy, and email token notes.
+- Registered `smart-retirement-mn` in tenant config and added a Supabase tenant-row migration.
+- Added a reusable advisor site layout with header, footer, disclosures, BrokerCheck/Form ADV/privacy links, state list, and tenant-driven colors.
+- Added public advisor routes for home, about, services, disclosures, schedule, and a browser-local calculator flow.
+- Preserved the existing funnel renderer at `/funnel` and kept `/` on the original funnel for tenants without advisor content.
+- Removed the video provider from the active retirement migration scope per owner direction.
+- Replaced the first-pass calculator scaffold with the stronger Replit-style retirement paycheck flow: payout-rate income bands, loading interstitial, blurred unlock gate, snapshot results card, inline refinement scoring, exit-intent email capture, and booking handoff. The video blocks and real lead API calls remain intentionally omitted.
+
+Skipped:
+- Lead creation, CRM sync, email scheduling, audit logging, and compliance-review no-op mode for the advisor calculator. The calculator flow is intentionally local-only for this pass.
+- Recharts was not added; the result chart is an inline SVG to keep dependencies light while the lead wiring is deferred.
+- Real advisor deploy values were not filled in; Smart Retirement MN keeps schema-valid placeholders and README deploy blockers.
+
+Verification:
+- `npx pnpm@10.11.1 typecheck` passed before docs-only updates.
+- `npx pnpm@10.11.1 lint` passed.
+- `npx pnpm@10.11.1 test` passed.
+- `npx pnpm@10.11.1 build` passed.
+- Local smoke checks returned 200 for Smart Retirement MN `/`, `/about`, `/services`, `/disclosures`, `/schedule`, `/calculator`, `/calculator/unlock`, `/calculator/result`, and `/funnel`.
+- Local smoke checks confirmed demo `/` still contains `Launch a lead funnel without new code`.
+- Local smoke checks confirmed retirement `/` still contains `Estimate Your Retirement Paycheck`.
+
+Risks:
+- The current advisor calculator does not persist leads, events, emails, or CRM records.
+- Placeholder CRD, URLs, photo URL, scheduling URL, and email addresses must be replaced before public deployment.
+- The Tailwind build emits a warning that no utility classes were detected because most current styling remains CSS-based while Tailwind is available.
+
+## Advisor Site Template - Visual Design Addendum
+
+Built:
+- Reworked the Phase 0 foundation into a premium advisor design system: Fraunces display serif, Inter Tight sans, semantic runtime color tokens, sharper shadcn primitives, Wordmark branding, and styled advisor-photo fallback initials.
+- Added `@tailwindcss/typography` for editorial About/Disclosures prose and `recharts` for the calculator gate/result charts.
+- Added optional tenant insights content and populated Smart Retirement MN with three reference insight cards.
+- Rebuilt the Smart Retirement MN home, about, services, disclosures, schedule, footer, and calculator surfaces to match the addendum's advisor-firm visual language: large editorial hero, stat band, asymmetric about section, calculator promo, long multi-column footer, regulator-friendly disclosures, and responsive mobile layouts.
+- Updated the calculator funnel to inherit the design system, remove video blocks, use local-only state, use a real blurred chart on the unlock gate, and show the result chart/paycheck range with tenant colors.
+- Tuned CTA text color for WCAG contrast on the warm-gold accent background while preserving the accent as the primary CTA color.
+
+Skipped:
+- Real lead capture, CRM/email wiring, compliance-review no-op mode, and audit logging remain intentionally deferred per owner direction.
+- No new imagery was committed; Smart Retirement MN still uses the placeholder photo URL and the UI renders a monogram fallback until a real headshot is supplied.
+
+Verification:
+- `npx pnpm@10.11.1 typecheck` passed.
+- `npx pnpm@10.11.1 lint` passed.
+- `npx pnpm@10.11.1 test` passed.
+- `npx pnpm@10.11.1 build` passed.
+- Smart Retirement MN route smoke checks returned 200 for `/`, `/about`, `/services`, `/disclosures`, `/schedule`, `/calculator`, `/calculator/unlock`, and `/calculator/result`.
+- Desktop and 375px mobile screenshots confirmed the oversized Fraunces hero, serif uppercase Wordmark, muted palette, monogram photo fallback, wrapped mobile hero copy, and responsive stacked layouts.
+- Forbidden visual-pattern scan found no `bg-gradient`, CSS gradient, `shadow-md`, `shadow-xl`, animation, or HeyGen references in active app/UI code.
+- Lighthouse against `next start` on the optimized build scored Performance 98, Accessibility 100, Best Practices 96. Lighthouse against `next dev` with real local timing scored Performance 96, Accessibility 100, Best Practices 96; the default simulated mobile dev audit remains noisy because of Next's development bundle.
+
+Risks:
+- `@tailwindcss/typography` and `recharts` are justified by the addendum: prose styling for compliance/editorial pages and real charts for calculator preview/result.
+- The production-looking site is now available, but public deployment still requires replacing placeholder CRD/URLs/headshot/scheduling/email values and completing lead/event persistence later.

@@ -51,14 +51,6 @@ export const retirementCopy = {
     ctaButton: "Lock In My Income — Free Review",
     noObligation: "No cost. No obligation. Educational review only."
   },
-  video: {
-    url: "https://app.heygen.com/embeds/5f5089a61f834cef8bd29e0099696812?autoplay=1&muted=1",
-    mediumLowHeadline: "How Retirees Turn Savings Into a Monthly Paycheck",
-    highHeadline: "See How Retirees Turn Savings Into a Monthly Paycheck — Without Market Risk",
-    placement:
-      "Shown before the CTA for medium, low, or unrefined leads; shown after the CTA for refined high-tier leads.",
-    controls: "iframe allow=\"encrypted-media; fullscreen; autoplay\" allowFullScreen"
-  },
   booking: {
     calendlyUrl: "https://calendly.com/your-link-here",
     headline: "You're All Set",

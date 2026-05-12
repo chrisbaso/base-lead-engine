@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@ble/core", "@ble/tenant-schema", "@ble/tenant-demo"]
+  transpilePackages: [
+    "@ble/core",
+    "@ble/tenant-schema",
+    "@ble/tenant-demo",
+    "@ble/tenant-hvac-ops-pro",
+    "@ble/tenant-smart-retirement-mn"
+  ]
 };
 
 export default nextConfig;

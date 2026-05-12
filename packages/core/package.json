@@ -12,6 +12,7 @@
     "./email-engine": "./src/email-engine/index.ts",
     "./crm-sync": "./src/crm-sync/index.ts",
     "./lead-scoring": "./src/lead-scoring/index.ts",
+    "./calculators": "./src/calculators/index.ts",
     "./notifications": "./src/notifications/index.ts",
     "./logger": "./src/logger/index.ts",
     "./retry": "./src/retry/index.ts",
@@ -29,7 +30,9 @@
   },
   "dependencies": {
     "@ble/tenant-demo": "workspace:*",
+    "@ble/tenant-hvac-ops-pro": "workspace:*",
     "@ble/tenant-retirement": "workspace:*",
+    "@ble/tenant-smart-retirement-mn": "workspace:*",
     "@ble/tenant-schema": "workspace:*",
     "@supabase/supabase-js": "^2.49.4",
     "react": "19.2.4",

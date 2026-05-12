@@ -79,13 +79,9 @@ Do not deploy or switch traffic until every item is checked.
 - [ ] Set staging HubSpot private app token env var.
 - [ ] Run a staging contact/deal/list sync test without touching production HubSpot.
 
-## HeyGen And Booking
+## Booking
 
-- [ ] Confirm HeyGen embed URL and playback controls:
-  - `https://app.heygen.com/embeds/5f5089a61f834cef8bd29e0099696812?autoplay=1&muted=1`
 - [ ] Replace placeholder Calendly URL `https://calendly.com/your-link-here`.
-- [ ] Verify high-tier video placement after CTA.
-- [ ] Verify medium/low/unrefined video placement before CTA.
 
 ## Cutover
 
