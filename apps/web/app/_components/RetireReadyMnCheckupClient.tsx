@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, Mail, Phone, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, Mail, Phone } from "lucide-react";
 import type { TenantConfig } from "@ble/tenant-schema";
 import type { CaptureValues } from "@ble/core/lead-capture/components";
 import { getClientTrackingConfig } from "@ble/core/tracking";
@@ -58,6 +58,12 @@ const steps: Step[] = [
   { id: "email-gate", title: "Your score is ready", helper: "Enter your first name and email to reveal the score." },
   { id: "phone-match", title: "Minnesota specialist match", helper: "Add phone consent only if you want a local specialist handoff." }
 ];
+
+const fallbackStep: Step = {
+  id: "age",
+  title: "Retirement timeline",
+  helper: "Start with where you are and when you want income to begin."
+};
 
 const savingsOptions: Array<{ value: SavingsBucket; label: string }> = [
   { value: "under-250000", label: "Under $250K" },
@@ -182,7 +188,7 @@ export function RetireReadyMnCheckupClient({
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const tracking = useMemo(() => getClientTrackingConfig(tenant), [tenant]);
-  const step = steps[stepIndex] ?? steps[0]!;
+  const step = steps[stepIndex] ?? fallbackStep;
   const score = useMemo(() => calculateScore(values), [values]);
   const progress = Math.round(((stepIndex + 1) / steps.length) * 100);
 
@@ -355,7 +361,9 @@ function renderStep(
             min={45}
             max={85}
             value={values.currentAge}
-            onChange={(event) => updateValue("currentAge", event.target.value)}
+            onChange={(event) => {
+              updateValue("currentAge", event.target.value);
+            }}
           />
         </label>
         <label>
@@ -365,7 +373,9 @@ function renderStep(
             min={55}
             max={75}
             value={values.targetRetirementAge}
-            onChange={(event) => updateValue("targetRetirementAge", event.target.value)}
+            onChange={(event) => {
+              updateValue("targetRetirementAge", event.target.value);
+            }}
           />
         </label>
       </div>
@@ -380,7 +390,9 @@ function renderStep(
             key={option.value}
             className={values.currentSavingsBucket === option.value ? "selected" : undefined}
             type="button"
-            onClick={() => updateValue("currentSavingsBucket", option.value)}
+            onClick={() => {
+              updateValue("currentSavingsBucket", option.value);
+            }}
           >
             {option.label}
           </button>
@@ -398,7 +410,9 @@ function renderStep(
           min={0}
           max={8000}
           value={values.monthlySocialSecurity}
-          onChange={(event) => updateValue("monthlySocialSecurity", event.target.value)}
+          onChange={(event) => {
+            updateValue("monthlySocialSecurity", event.target.value);
+          }}
         />
       </label>
     );
@@ -413,7 +427,9 @@ function renderStep(
           min={1000}
           max={50000}
           value={values.desiredMonthlyIncome}
-          onChange={(event) => updateValue("desiredMonthlyIncome", event.target.value)}
+          onChange={(event) => {
+            updateValue("desiredMonthlyIncome", event.target.value);
+          }}
         />
       </label>
     );
@@ -427,7 +443,9 @@ function renderStep(
             key={option.value}
             className={values.primaryConcern === option.value ? "selected" : undefined}
             type="button"
-            onClick={() => updateValue("primaryConcern", option.value)}
+            onClick={() => {
+              updateValue("primaryConcern", option.value);
+            }}
           >
             {option.label}
           </button>
@@ -441,11 +459,22 @@ function renderStep(
       <div className="rrmn-field-grid">
         <label>
           <span>First name</span>
-          <input value={values.firstName} onChange={(event) => updateValue("firstName", event.target.value)} />
+          <input
+            value={values.firstName}
+            onChange={(event) => {
+              updateValue("firstName", event.target.value);
+            }}
+          />
         </label>
         <label>
           <span>Email</span>
-          <input type="email" value={values.email} onChange={(event) => updateValue("email", event.target.value)} />
+          <input
+            type="email"
+            value={values.email}
+            onChange={(event) => {
+              updateValue("email", event.target.value);
+            }}
+          />
         </label>
       </div>
     );
@@ -456,18 +485,31 @@ function renderStep(
       <div className="rrmn-field-grid">
         <label>
           <span>Last name</span>
-          <input value={values.lastName} onChange={(event) => updateValue("lastName", event.target.value)} />
+          <input
+            value={values.lastName}
+            onChange={(event) => {
+              updateValue("lastName", event.target.value);
+            }}
+          />
         </label>
         <label>
           <span>Phone</span>
-          <input type="tel" value={values.phone} onChange={(event) => updateValue("phone", event.target.value)} />
+          <input
+            type="tel"
+            value={values.phone}
+            onChange={(event) => {
+              updateValue("phone", event.target.value);
+            }}
+          />
         </label>
       </div>
       <label className="rrmn-consent">
         <input
           type="checkbox"
           checked={values.tcpaConsent}
-          onChange={(event) => updateValue("tcpaConsent", event.target.checked)}
+          onChange={(event) => {
+            updateValue("tcpaConsent", event.target.checked);
+          }}
         />
         <span>
           I agree RetireReadyMN and its matched licensed local advisor may call or text me at the number provided

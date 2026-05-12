@@ -9,7 +9,7 @@ type CategoryPageProps = {
   params: Promise<{ category: string }>;
 };
 
-export async function generateStaticParams() {
+export function generateStaticParams() {
   return insightCategories.map((category) => ({ category: categoryToSlug(category) }));
 }
 

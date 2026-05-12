@@ -307,7 +307,7 @@ export async function getFunnelStats(tenant: TenantConfig): Promise<AdminDataSta
   const sentEmails = emailSendRows.filter((send) => send.status === "sent").length;
   const openedEmails = emailSendRows.filter((send) => send.opened_at).length;
   const clickedEmails = emailSendRows.filter((send) => send.clicked_at).length;
-  const totalAdSpend = adSpendRows.reduce((sum, row) => sum + Number(row.amount), 0);
+  const totalAdSpend = adSpendRows.reduce((sum, row) => sum + row.amount, 0);
 
   return {
     status: "ready",

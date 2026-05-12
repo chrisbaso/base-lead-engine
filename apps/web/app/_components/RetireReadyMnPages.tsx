@@ -28,18 +28,18 @@ const navItems = [
   { href: "/insights", label: "Insights" }
 ] as const;
 
-function resolveHeroVariant(heroVariantId?: string | undefined) {
+function resolveHeroVariant(heroVariantId?: string) {
   return (
     retireReadyMnCopy.heroVariants.find((variant) => variant.id === heroVariantId) ??
     retireReadyMnCopy.heroVariants[0]
   );
 }
 
-function resolveQuizFrame(quizFrameId?: string | undefined) {
+function resolveQuizFrame(quizFrameId?: string) {
   return retireReadyMnCopy.quizFrames.find((frame) => frame.id === quizFrameId) ?? retireReadyMnCopy.quizFrames[0];
 }
 
-function buildCheckupHref(heroVariantId?: string | undefined, quizFrameId?: string | undefined) {
+function buildCheckupHref(heroVariantId?: string, quizFrameId?: string) {
   const params = new URLSearchParams();
   if (heroVariantId) {
     params.set("hero_variant", heroVariantId);

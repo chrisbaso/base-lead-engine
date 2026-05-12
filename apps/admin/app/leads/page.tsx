@@ -100,16 +100,18 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     </td>
                     <td>
                       <div className="outcome-stack">
-                        {[
+                        {(
+                          [
                           ["appointment_booked_at", "Booked", row.appointment_booked_at],
                           ["appointment_held_at", "Held", row.appointment_held_at],
                           ["case_opened_at", "Opened", row.case_opened_at],
                           ["case_closed_at", "Closed", row.case_closed_at]
-                        ].map(([field, label, value]) => (
+                          ] satisfies Array<[string, string, string | null]>
+                        ).map(([field, label, value]) => (
                           <form key={field} action={updateLeadOutcomeAction}>
                             <input type="hidden" name="tenantSlug" value={tenant.identity.slug} />
                             <input type="hidden" name="leadId" value={row.id} />
-                            <input type="hidden" name="outcomeField" value={field ?? ""} />
+                            <input type="hidden" name="outcomeField" value={field} />
                             {field === "case_closed_at" ? (
                               <>
                                 <input name="premiumAmount" placeholder="Premium" defaultValue={row.premium_amount ?? ""} />
