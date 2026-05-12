@@ -167,6 +167,10 @@ h3 {
   grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
 }
 
+.agent-run-form {
+  grid-template-columns: minmax(180px, 260px);
+}
+
 .admin-link-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

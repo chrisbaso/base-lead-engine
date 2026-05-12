@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
 import type { TenantConfig } from "@ble/tenant-schema";
 
-export type CaptureValues = Record<string, string | number | boolean>;
+export type CaptureValues = Record<string, string | number | boolean | string[]>;
 
 export type LeadCaptureSubmit = (payload: {
   fields: CaptureValues;

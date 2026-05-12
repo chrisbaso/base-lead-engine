@@ -33,12 +33,14 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const advisorNames = new Map(advisorRows.map((advisor) => [advisor.id, advisor.name]));
   const qualified = rows.filter((row) => row.score >= tenant.scoring.qualifiedThreshold).length;
   const partials = rows.filter((row) => row.status === "partial").length;
+  const highIntent = rows.filter((row) => row.annuity_intent_band === "High").length;
 
   return (
     <AdminShell selectedTenantSlug={tenant.identity.slug}>
       <MetricGrid>
         <Metric label="Qualified" value={String(qualified)} />
         <Metric label="Partials" value={String(partials)} />
+        <Metric label="High intent" value={String(highIntent)} />
         <Metric label="Avg score" value={averageScore(rows.map((row) => row.score))} />
       </MetricGrid>
       <section>
@@ -58,6 +60,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                   <th>Status</th>
                   <th>Score</th>
                   <th>Band</th>
+                  <th>Intent</th>
                   <th>Source</th>
                   <th>Advisor</th>
                   <th>Outcomes</th>
@@ -73,6 +76,11 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     <td>{row.status}</td>
                     <td>{String(row.retirement_score ?? row.score)}</td>
                     <td>{row.score_band ?? "n/a"}</td>
+                    <td>
+                      <strong>{String(row.annuity_intent_score ?? 0)}</strong>
+                      <span>{row.annuity_intent_band ?? "unscored"}</span>
+                      <span>{row.recommended_action ?? "continue_nurture"}</span>
+                    </td>
                     <td>{sourceLabel(row.source)}</td>
                     <td>
                       <form className="inline-admin-form" action={assignAdvisorAction}>

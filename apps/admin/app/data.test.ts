@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarizeContentPerformance, summarizeVariantStats } from "./data";
+import { summarizeAgentLeadStats, summarizeContentPerformance, summarizeVariantStats } from "./data";
 
 describe("summarizeVariantStats", () => {
   it("rolls up quiz and email variant performance", () => {
@@ -89,5 +89,35 @@ describe("summarizeContentPerformance", () => {
         leadCaptureRate: 100
       }
     ]);
+  });
+});
+
+describe("summarizeAgentLeadStats", () => {
+  it("counts automated annuity-intent recommendations by priority", () => {
+    const stats = summarizeAgentLeadStats([
+      {
+        annuity_intent_band: "High",
+        recommended_action: "priority_advisor_review",
+        automation_priority: "hot"
+      },
+      {
+        annuity_intent_band: "Medium",
+        recommended_action: "nurture_then_review",
+        automation_priority: "warm"
+      },
+      {
+        annuity_intent_band: "High",
+        recommended_action: "priority_advisor_review",
+        automation_priority: "hot"
+      }
+    ]);
+
+    expect(stats).toEqual({
+      highIntent: 2,
+      mediumIntent: 1,
+      lowIntent: 0,
+      hotPriority: 2,
+      priorityReviews: 2
+    });
   });
 });

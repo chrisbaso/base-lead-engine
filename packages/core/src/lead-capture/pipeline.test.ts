@@ -93,6 +93,11 @@ describe("submitLead", () => {
           desiredMonthlyIncome: 7000,
           retirementScore: 88,
           scoreBand: "Green",
+          incomePreference: "dependable_income",
+          annuityIntentScore: 86,
+          annuityIntentBand: "High",
+          annuityIntentSegment: "income_floor_ready",
+          annuityIntentReasons: ["Meaningful investable assets", "Dependable income preference"],
           primaryConcern: "taxes",
           tcpaConsent: true
         },
@@ -114,6 +119,11 @@ describe("submitLead", () => {
       desired_monthly_income: 7000,
       retirement_score: 88,
       score_band: "Green",
+      income_preference: "dependable_income",
+      annuity_intent_score: 86,
+      annuity_intent_band: "High",
+      annuity_intent_segment: "income_floor_ready",
+      annuity_intent_reasons: ["Meaningful investable assets", "Dependable income preference"],
       utm_source: "meta",
       utm_campaign: "fall-checkup"
     });

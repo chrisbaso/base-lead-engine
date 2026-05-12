@@ -10,6 +10,11 @@ export const leadSourceSchema = z.object({
   utmContent: z.string().optional(),
   quizVariant: z.string().optional(),
   emailVariant: z.string().optional(),
+  heroVariant: z.string().optional(),
+  quizFrame: z.string().optional(),
+  articleSlug: z.string().optional(),
+  articleCategory: z.string().optional(),
+  ctaVariant: z.string().optional(),
   userAgent: z.string().optional(),
   ipAddress: z.string().optional()
 });
@@ -18,7 +23,7 @@ export const leadSubmissionSchema = z.object({
   tenantId: z.string().uuid(),
   stepId: z.string().min(1).optional(),
   isPartial: z.boolean().default(false),
-  fields: z.record(z.union([z.string(), z.number(), z.boolean()])),
+  fields: z.record(z.union([z.string(), z.number(), z.boolean(), z.array(z.string())])),
   source: leadSourceSchema.default({})
 });
 

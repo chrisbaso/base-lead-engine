@@ -1,6 +1,6 @@
 import { AdminShell, EmptyState, Metric, MetricGrid } from "../../admin-shell";
 import type { VariantPerformanceRow } from "../../data";
-import { getTenantDashboardStats, resolveAdminTenant } from "../../data";
+import { getLeadAgentOps, getTenantDashboardStats, resolveAdminTenant } from "../../data";
 
 type DashboardPageProps = {
   searchParams: Promise<{ tenant?: string }>;
@@ -13,7 +13,7 @@ function percent(value: number) {
 export default async function TenantDashboardPage({ searchParams }: DashboardPageProps) {
   const params = await searchParams;
   const tenant = resolveAdminTenant(params.tenant);
-  const stats = await getTenantDashboardStats(tenant);
+  const [stats, leadOps] = await Promise.all([getTenantDashboardStats(tenant), getLeadAgentOps(tenant)]);
 
   return (
     <AdminShell selectedTenantSlug={tenant.identity.slug}>
@@ -30,6 +30,12 @@ export default async function TenantDashboardPage({ searchParams }: DashboardPag
             <Metric label="Email click rate" value={percent(stats.data.emailClickRate)} />
             <Metric label="Affiliate clicks" value={String(stats.data.affiliateClicks)} />
             <Metric label="Est. conversions" value={String(stats.data.estimatedConversions)} />
+            {leadOps.status === "ready" ? (
+              <>
+                <Metric label="High intent" value={String(leadOps.data.stats.highIntent)} />
+                <Metric label="Pending routes" value={String(leadOps.data.pendingRecommendations)} />
+              </>
+            ) : null}
           </MetricGrid>
           <section>
             <h2>Variant Performance</h2>

@@ -12,6 +12,11 @@ import {
   type RetirementScoreResult,
   type SavingsBucket
 } from "@ble/tenant-retire-ready-mn/lib/retirement-score-engine";
+import {
+  calculateAnnuityBuyerIntent,
+  type AnnuityIntentResult,
+  type IncomePreference
+} from "@ble/tenant-retire-ready-mn/lib/annuity-intent-engine";
 import { recordRetireReadyContentEventAction, recordRetireReadyStepAction, submitLeadAction } from "../actions";
 
 type RetireReadyMnCheckupClientProps = {
@@ -27,6 +32,7 @@ type CheckupValues = {
   monthlySocialSecurity: string;
   desiredMonthlyIncome: string;
   primaryConcern: PrimaryConcern | "";
+  incomePreference: IncomePreference | "";
   firstName: string;
   email: string;
   lastName: string;
@@ -40,6 +46,7 @@ type StepId =
   | "social-security"
   | "desired-income"
   | "primary-concern"
+  | "income-preference"
   | "email-gate"
   | "phone-match";
 
@@ -55,6 +62,7 @@ const steps: Step[] = [
   { id: "social-security", title: "Social Security", helper: "Enter the estimated monthly amount at full retirement age." },
   { id: "desired-income", title: "Desired income", helper: "Use today's dollars, before detailed tax modeling." },
   { id: "primary-concern", title: "Primary concern", helper: "This helps frame your score summary." },
+  { id: "income-preference", title: "Income preference", helper: "Choose the planning question you most want answered next." },
   { id: "email-gate", title: "Your score is ready", helper: "Enter your first name and email to reveal the score." },
   { id: "phone-match", title: "Minnesota specialist match", helper: "Add phone consent only if you want a local specialist handoff." }
 ];
@@ -81,6 +89,14 @@ const concernOptions: Array<{ value: PrimaryConcern; label: string }> = [
   { value: "healthcare_costs", label: "Healthcare costs" }
 ];
 
+const incomePreferenceOptions: Array<{ value: IncomePreference; label: string }> = [
+  { value: "dependable_income", label: "A dependable monthly income floor" },
+  { value: "growth_flexibility", label: "Growth and withdrawal flexibility" },
+  { value: "tax_efficiency", label: "A more tax-aware income plan" },
+  { value: "legacy_flexibility", label: "Flexibility for family or legacy goals" },
+  { value: "not_sure", label: "I am not sure yet" }
+];
+
 const initialValues: CheckupValues = {
   currentAge: "",
   targetRetirementAge: "",
@@ -88,6 +104,7 @@ const initialValues: CheckupValues = {
   monthlySocialSecurity: "",
   desiredMonthlyIncome: "",
   primaryConcern: "",
+  incomePreference: "",
   firstName: "",
   email: "",
   lastName: "",
@@ -155,7 +172,30 @@ function calculateScore(values: CheckupValues): RetirementScoreResult | null {
   });
 }
 
-function toCaptureValues(values: CheckupValues, score: RetirementScoreResult | null): CaptureValues {
+function calculateIntent(values: CheckupValues, articleSlug?: string): AnnuityIntentResult | null {
+  if (!canScore(values) || values.incomePreference === "") {
+    return null;
+  }
+
+  return calculateAnnuityBuyerIntent({
+    currentAge: Number(values.currentAge),
+    targetRetirementAge: Number(values.targetRetirementAge),
+    currentSavingsBucket: values.currentSavingsBucket,
+    monthlySocialSecurity: Number(values.monthlySocialSecurity),
+    desiredMonthlyIncome: Number(values.desiredMonthlyIncome),
+    primaryConcern: values.primaryConcern,
+    incomePreference: values.incomePreference,
+    phone: values.phone,
+    tcpaConsent: values.tcpaConsent,
+    articleSlug
+  });
+}
+
+function toCaptureValues(
+  values: CheckupValues,
+  score: RetirementScoreResult | null,
+  intent: AnnuityIntentResult | null
+): CaptureValues {
   return {
     currentAge: Number(values.currentAge),
     targetRetirementAge: Number(values.targetRetirementAge),
@@ -163,6 +203,7 @@ function toCaptureValues(values: CheckupValues, score: RetirementScoreResult | n
     monthlySocialSecurity: Number(values.monthlySocialSecurity),
     desiredMonthlyIncome: Number(values.desiredMonthlyIncome),
     primaryConcern: values.primaryConcern,
+    incomePreference: values.incomePreference,
     firstName: values.firstName,
     email: values.email,
     lastName: values.lastName,
@@ -175,6 +216,18 @@ function toCaptureValues(values: CheckupValues, score: RetirementScoreResult | n
           scoreBand: score.band,
           projectedMonthlyIncome: score.projectedMonthlyIncome,
           monthlyIncomeGap: score.monthlyGap
+        }
+      : {}),
+    ...(intent
+      ? {
+          annuityIntentScore: intent.score,
+          annuityIntentBand: intent.band,
+          annuityIntentSegment: intent.segment,
+          annuityIntentReasons: intent.reasons,
+          recommendedAction: intent.recommendedAction,
+          automationPriority: intent.automationPriority,
+          nextBestEmailId: intent.nextBestEmailId,
+          advisorTalkingPoints: intent.advisorTalkingPoints
         }
       : {})
   };
@@ -193,6 +246,7 @@ export function RetireReadyMnCheckupClient({
   const tracking = useMemo(() => getClientTrackingConfig(tenant), [tenant]);
   const step = steps[stepIndex] ?? fallbackStep;
   const score = useMemo(() => calculateScore(values), [values]);
+  const intent = useMemo(() => calculateIntent(values), [values]);
   const progress = Math.round(((stepIndex + 1) / steps.length) * 100);
 
   useEffect(() => {
@@ -253,6 +307,10 @@ export function RetireReadyMnCheckupClient({
       return "Select the concern that feels most important.";
     }
 
+    if (step.id === "income-preference" && values.incomePreference === "") {
+      return "Select the planning question you most want answered next.";
+    }
+
     if (step.id === "email-gate") {
       if (values.firstName.trim().length === 0) {
         return "Enter your first name.";
@@ -287,7 +345,7 @@ export function RetireReadyMnCheckupClient({
     setSubmitting(true);
     try {
       const source = readSource(heroVariantId, quizFrameId);
-      const payload = toCaptureValues(values, score);
+      const payload = toCaptureValues(values, score, calculateIntent(values, source.articleSlug));
 
       emitTracking("LeadStepCompleted", {
         stepId: step.id,
@@ -346,7 +404,7 @@ export function RetireReadyMnCheckupClient({
       </div>
       <div className="rrmn-step-body">{renderStep(step.id, values, updateValue)}</div>
       {step.id === "email-gate" && score ? <ScoreBreakdown score={score} /> : null}
-      {step.id === "phone-match" && score ? <ScoreBreakdown score={score} full /> : null}
+      {step.id === "phone-match" && score ? <ScoreBreakdown score={score} full intent={intent} /> : null}
       {error ? <p className="rrmn-form-error">{error}</p> : null}
       <div className="rrmn-step-actions">
         {stepIndex > 0 ? (
@@ -482,6 +540,25 @@ function renderStep(
     );
   }
 
+  if (stepId === "income-preference") {
+    return (
+      <div className="rrmn-option-grid">
+        {incomePreferenceOptions.map((option) => (
+          <button
+            key={option.value}
+            className={values.incomePreference === option.value ? "selected" : undefined}
+            type="button"
+            onClick={() => {
+              updateValue("incomePreference", option.value);
+            }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   if (stepId === "email-gate") {
     return (
       <div className="rrmn-field-grid">
@@ -549,7 +626,15 @@ function renderStep(
   );
 }
 
-function ScoreBreakdown({ score, full = false }: { score: RetirementScoreResult; full?: boolean }) {
+function ScoreBreakdown({
+  score,
+  full = false,
+  intent
+}: {
+  score: RetirementScoreResult;
+  full?: boolean;
+  intent?: AnnuityIntentResult | null;
+}) {
   return (
     <aside className={`rrmn-score-card ${score.band.toLowerCase()}`}>
       <div>
@@ -579,6 +664,12 @@ function ScoreBreakdown({ score, full = false }: { score: RetirementScoreResult;
           Add phone consent on the next step to see the full personalized breakdown and local match option.
         </p>
       )}
+      {full && intent ? (
+        <p className="rrmn-email-note">
+          The useful next step is to identify which expenses need dependable income, then compare cost,
+          flexibility, tax, inflation, and survivor tradeoffs.
+        </p>
+      ) : null}
       {!full ? (
         <p className="rrmn-email-note">
           <Mail aria-hidden="true" />

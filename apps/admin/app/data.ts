@@ -17,6 +17,14 @@ export type LeadRow = {
   last_name: string | null;
   retirement_score: number | null;
   score_band: string | null;
+  income_preference: string | null;
+  annuity_intent_score: number | null;
+  annuity_intent_band: string | null;
+  annuity_intent_segment: string | null;
+  annuity_intent_reasons: string[] | null;
+  automation_priority: string | null;
+  recommended_action: string | null;
+  next_best_email_id: string | null;
   assigned_advisor_id: string | null;
   advisor_notes: string | null;
   appointment_booked_at: string | null;
@@ -139,6 +147,64 @@ export type AgentRunRow = {
   status: string;
   created_at: string;
   completed_at: string | null;
+};
+
+export type AgentLeadStatsInput = {
+  annuity_intent_band: string | null;
+  recommended_action: string | null;
+  automation_priority: string | null;
+};
+
+export type AgentLeadStats = {
+  highIntent: number;
+  mediumIntent: number;
+  lowIntent: number;
+  hotPriority: number;
+  priorityReviews: number;
+};
+
+export type LeadIntelligenceRow = {
+  id: string;
+  lead_id: string;
+  summary: string;
+  intent_score: number;
+  intent_band: string;
+  intent_segment: string;
+  urgency: string;
+  automation_priority: string;
+  recommended_next_action: string;
+  next_best_email_id: string | null;
+  signals: Record<string, unknown>;
+  missing_fields: string[];
+  risk_flags: string[];
+  advisor_talking_points: string[];
+  updated_at: string;
+};
+
+export type AdvisorRoutingRecommendationRow = {
+  id: string;
+  lead_id: string;
+  advisor_id: string;
+  rank: number;
+  score: number;
+  rationale: string;
+  reasons: string[];
+  status: string;
+  created_at: string;
+};
+
+export type AgentOpsLeadRow = {
+  lead: LeadRow;
+  intelligence: LeadIntelligenceRow | null;
+  recommendation: AdvisorRoutingRecommendationRow | null;
+};
+
+export type LeadAgentOps = {
+  stats: AgentLeadStats;
+  intelligenceCoverage: number;
+  pendingRecommendations: number;
+  recentAgentRuns: AgentRunRow[];
+  queue: AgentOpsLeadRow[];
 };
 
 export type ContentPublicationInput = {
@@ -274,10 +340,11 @@ export async function getLeadRows(tenant: TenantConfig): Promise<AdminDataState<
   const { data, error } = await client.data
     .from("leads")
     .select(
-      "id, email, phone, status, score, first_name, last_name, retirement_score, score_band, assigned_advisor_id, advisor_notes, appointment_booked_at, appointment_held_at, case_opened_at, case_closed_at, premium_amount, override_earned, source, data, created_at, updated_at"
+      "id, email, phone, status, score, first_name, last_name, retirement_score, score_band, income_preference, annuity_intent_score, annuity_intent_band, annuity_intent_segment, annuity_intent_reasons, automation_priority, recommended_action, next_best_email_id, assigned_advisor_id, advisor_notes, appointment_booked_at, appointment_held_at, case_opened_at, case_closed_at, premium_amount, override_earned, source, data, created_at, updated_at"
     )
     .eq("tenant_id", tenant.identity.tenantId)
-    .order("retirement_score", { ascending: false })
+    .order("annuity_intent_score", { ascending: false, nullsFirst: false })
+    .order("retirement_score", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(100)
     .overrideTypes<LeadRow[], { merge: false }>();
@@ -287,6 +354,84 @@ export async function getLeadRows(tenant: TenantConfig): Promise<AdminDataState<
   }
 
   return { status: "ready", data };
+}
+
+export async function getLeadAgentOps(tenant: TenantConfig): Promise<AdminDataState<LeadAgentOps>> {
+  const client = getServiceClient();
+  if (client.status === "unavailable") {
+    return client;
+  }
+
+  const [leads, intelligence, recommendations, runs] = await Promise.all([
+    client.data
+      .from("leads")
+      .select(
+        "id, email, phone, status, score, first_name, last_name, retirement_score, score_band, income_preference, annuity_intent_score, annuity_intent_band, annuity_intent_segment, annuity_intent_reasons, automation_priority, recommended_action, next_best_email_id, assigned_advisor_id, advisor_notes, appointment_booked_at, appointment_held_at, case_opened_at, case_closed_at, premium_amount, override_earned, source, data, created_at, updated_at"
+      )
+      .eq("tenant_id", tenant.identity.tenantId)
+      .order("annuity_intent_score", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(100)
+      .overrideTypes<LeadRow[], { merge: false }>(),
+    client.data
+      .from("lead_intelligence")
+      .select(
+        "id, lead_id, summary, intent_score, intent_band, intent_segment, urgency, automation_priority, recommended_next_action, next_best_email_id, signals, missing_fields, risk_flags, advisor_talking_points, updated_at"
+      )
+      .eq("tenant_id", tenant.identity.tenantId)
+      .order("updated_at", { ascending: false })
+      .limit(200)
+      .overrideTypes<LeadIntelligenceRow[], { merge: false }>(),
+    client.data
+      .from("advisor_routing_recommendations")
+      .select("id, lead_id, advisor_id, rank, score, rationale, reasons, status, created_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .eq("status", "pending")
+      .order("rank", { ascending: true })
+      .order("score", { ascending: false })
+      .limit(200)
+      .overrideTypes<AdvisorRoutingRecommendationRow[], { merge: false }>(),
+    client.data
+      .from("agent_runs")
+      .select("id, run_type, agent_name, status, created_at, completed_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .in("run_type", ["lead_intelligence", "advisor_routing", "lead_nurture", "compliance_guardrail"])
+      .order("created_at", { ascending: false })
+      .limit(10)
+      .overrideTypes<AgentRunRow[], { merge: false }>()
+  ]);
+
+  const error = leads.error ?? intelligence.error ?? recommendations.error ?? runs.error;
+  if (error) {
+    return { status: "unavailable", reason: error.message };
+  }
+
+  const leadRows = leads.data ?? [];
+  const intelligenceRows = intelligence.data ?? [];
+  const recommendationRows = recommendations.data ?? [];
+  const intelligenceByLead = new Map(intelligenceRows.map((row) => [row.lead_id, row]));
+  const recommendationByLead = new Map<string, AdvisorRoutingRecommendationRow>();
+
+  for (const recommendation of recommendationRows) {
+    if (!recommendationByLead.has(recommendation.lead_id)) {
+      recommendationByLead.set(recommendation.lead_id, recommendation);
+    }
+  }
+
+  return {
+    status: "ready",
+    data: {
+      stats: summarizeAgentLeadStats(leadRows),
+      intelligenceCoverage: ratio(intelligenceRows.length, leadRows.length),
+      pendingRecommendations: recommendationRows.length,
+      recentAgentRuns: runs.data ?? [],
+      queue: leadRows.map((lead) => ({
+        lead,
+        intelligence: intelligenceByLead.get(lead.id) ?? null,
+        recommendation: recommendationByLead.get(lead.id) ?? null
+      }))
+    }
+  };
 }
 
 export async function getAdvisors(tenant: TenantConfig): Promise<AdminDataState<AdvisorRow[]>> {
@@ -830,6 +975,37 @@ export function summarizeContentPerformance(input: {
       leadCaptureRate: ratio(row.leadCaptures, row.views)
     }))
     .sort((a, b) => b.views - a.views || a.title.localeCompare(b.title));
+}
+
+export function summarizeAgentLeadStats(rows: AgentLeadStatsInput[]): AgentLeadStats {
+  return rows.reduce<AgentLeadStats>(
+    (stats, row) => {
+      if (row.annuity_intent_band === "High") {
+        stats.highIntent += 1;
+      } else if (row.annuity_intent_band === "Medium") {
+        stats.mediumIntent += 1;
+      } else if (row.annuity_intent_band === "Low") {
+        stats.lowIntent += 1;
+      }
+
+      if (row.automation_priority === "hot") {
+        stats.hotPriority += 1;
+      }
+
+      if (row.recommended_action === "priority_advisor_review") {
+        stats.priorityReviews += 1;
+      }
+
+      return stats;
+    },
+    {
+      highIntent: 0,
+      mediumIntent: 0,
+      lowIntent: 0,
+      hotPriority: 0,
+      priorityReviews: 0
+    }
+  );
 }
 
 type ContentPerformanceAccumulator = Omit<ContentPerformanceRow, "leadCaptureRate">;

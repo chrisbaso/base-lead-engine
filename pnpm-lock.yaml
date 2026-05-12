@@ -62,6 +62,9 @@ importers:
       '@ble/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ble/tenant-retire-ready-mn':
+        specifier: workspace:*
+        version: link:../../packages/tenants/retire-ready-mn
       '@ble/tenant-schema':
         specifier: workspace:*
         version: link:../../packages/tenants/_schema

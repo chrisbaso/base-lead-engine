@@ -6,7 +6,8 @@
   "exports": {
     ".": "./config.ts",
     "./copy": "./copy.ts",
-    "./lib/retirement-score-engine": "./lib/retirement-score-engine.ts"
+    "./lib/retirement-score-engine": "./lib/retirement-score-engine.ts",
+    "./lib/annuity-intent-engine": "./lib/annuity-intent-engine.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",

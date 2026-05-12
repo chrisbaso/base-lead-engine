@@ -42,6 +42,17 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
   const desiredMonthlyIncome = readNumberField(fields.desiredMonthlyIncome);
   const retirementScore = readNumberField(fields.retirementScore);
   const scoreBand = typeof fields.scoreBand === "string" ? fields.scoreBand : null;
+  const incomePreference = typeof fields.incomePreference === "string" ? fields.incomePreference : null;
+  const annuityIntentScore = readNumberField(fields.annuityIntentScore);
+  const annuityIntentBand = typeof fields.annuityIntentBand === "string" ? fields.annuityIntentBand : null;
+  const annuityIntentSegment =
+    typeof fields.annuityIntentSegment === "string" ? fields.annuityIntentSegment : null;
+  const annuityIntentReasons = Array.isArray(fields.annuityIntentReasons)
+    ? fields.annuityIntentReasons.filter((reason): reason is string => typeof reason === "string")
+    : [];
+  const automationPriority = typeof fields.automationPriority === "string" ? fields.automationPriority : null;
+  const recommendedAction = typeof fields.recommendedAction === "string" ? fields.recommendedAction : null;
+  const nextBestEmailId = typeof fields.nextBestEmailId === "string" ? fields.nextBestEmailId : null;
   const scoreResult = computeLeadScore(options.tenant, fields);
 
   const { data, error } = await options.supabase
@@ -64,6 +75,14 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
         desired_monthly_income: desiredMonthlyIncome,
         retirement_score: retirementScore,
         score_band: scoreBand,
+        income_preference: incomePreference,
+        annuity_intent_score: annuityIntentScore,
+        annuity_intent_band: annuityIntentBand,
+        annuity_intent_segment: annuityIntentSegment,
+        annuity_intent_reasons: annuityIntentReasons,
+        automation_priority: automationPriority,
+        recommended_action: recommendedAction,
+        next_best_email_id: nextBestEmailId,
         quiz_answers: options.tenant.leadCapture.type === "quiz" ? fields : {},
         recommended_software: recommendedSoftware,
         quiz_variant: quizVariant,

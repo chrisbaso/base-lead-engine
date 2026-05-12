@@ -13,6 +13,8 @@ import { resolveHvacExperimentAssignment } from "@ble/tenant-hvac-ops-pro/experi
 import { recommendHvacSoftware } from "@ble/tenant-hvac-ops-pro/lib/recommendation-engine";
 import { calculateRetirementIncomeScore } from "@ble/tenant-retire-ready-mn/lib/retirement-score-engine";
 import type { PrimaryConcern, SavingsBucket } from "@ble/tenant-retire-ready-mn/lib/retirement-score-engine";
+import { calculateAnnuityBuyerIntent } from "@ble/tenant-retire-ready-mn/lib/annuity-intent-engine";
+import type { IncomePreference } from "@ble/tenant-retire-ready-mn/lib/annuity-intent-engine";
 
 type LeadSourceInput = {
   url?: string;
@@ -177,8 +179,14 @@ export async function recordRetireReadyStepAction(input: {
 
   const forwardedFor = headerList.get("x-forwarded-for");
   const ipAddress = forwardedFor?.split(",")[0]?.trim();
+  const source = {
+    ...input.source,
+    userAgent: headerList.get("user-agent") ?? undefined,
+    ipAddress
+  };
+  const fields = enrichTenantFields(tenant.identity.slug, input.fields, source);
   const supabase = getSupabaseClient("service");
-  const email = stringField(input.fields.email);
+  const email = stringField(fields.email);
   let leadId: string | null = null;
 
   if (email) {
@@ -188,25 +196,29 @@ export async function recordRetireReadyStepAction(input: {
         {
           tenant_id: tenant.identity.tenantId,
           email,
-          phone: stringField(input.fields.phone) ?? null,
+          phone: stringField(fields.phone) ?? null,
           status: "partial",
-          score: numberField(input.fields.retirementScore) ?? 0,
-          source: {
-            ...input.source,
-            userAgent: headerList.get("user-agent") ?? undefined,
-            ipAddress
-          },
-          data: input.fields,
-          first_name: stringField(input.fields.firstName) ?? null,
-          last_name: stringField(input.fields.lastName) ?? null,
-          age: numberField(input.fields.currentAge),
-          current_savings: numberField(input.fields.currentSavings),
-          target_retirement_age: numberField(input.fields.targetRetirementAge),
-          monthly_social_security: numberField(input.fields.monthlySocialSecurity),
-          desired_monthly_income: numberField(input.fields.desiredMonthlyIncome),
-          retirement_score: numberField(input.fields.retirementScore),
-          score_band: stringField(input.fields.scoreBand) ?? null,
-          quiz_answers: input.fields,
+          score: numberField(fields.retirementScore) ?? 0,
+          source,
+          data: fields,
+          first_name: stringField(fields.firstName) ?? null,
+          last_name: stringField(fields.lastName) ?? null,
+          age: numberField(fields.currentAge),
+          current_savings: numberField(fields.currentSavings),
+          target_retirement_age: numberField(fields.targetRetirementAge),
+          monthly_social_security: numberField(fields.monthlySocialSecurity),
+          desired_monthly_income: numberField(fields.desiredMonthlyIncome),
+          retirement_score: numberField(fields.retirementScore),
+          score_band: stringField(fields.scoreBand) ?? null,
+          income_preference: stringField(fields.incomePreference) ?? null,
+          annuity_intent_score: numberField(fields.annuityIntentScore),
+          annuity_intent_band: stringField(fields.annuityIntentBand) ?? null,
+          annuity_intent_segment: stringField(fields.annuityIntentSegment) ?? null,
+          annuity_intent_reasons: readStringArrayField(fields.annuityIntentReasons),
+          automation_priority: stringField(fields.automationPriority) ?? null,
+          recommended_action: stringField(fields.recommendedAction) ?? null,
+          next_best_email_id: stringField(fields.nextBestEmailId) ?? null,
+          quiz_answers: fields,
           utm_source: input.source?.utmSource,
           utm_campaign: input.source?.utmCampaign,
           utm_content: input.source?.utmContent,
@@ -226,12 +238,8 @@ export async function recordRetireReadyStepAction(input: {
 
   const metadata = {
     stepId: input.stepId,
-    fields: input.fields,
-    source: {
-      ...input.source,
-      userAgent: headerList.get("user-agent") ?? undefined,
-      ipAddress
-    }
+    fields,
+    source
   };
 
   const [{ error: leadEventError }, { error: eventError }] = await Promise.all([
@@ -318,7 +326,7 @@ export async function recordRetireReadyContentEventAction(input: {
 function enrichTenantFields(
   tenantSlug: string,
   fields: CaptureValues,
-  source: { quizVariant?: string; emailVariant?: string } | undefined
+  source: LeadSourceInput | undefined
 ): CaptureValues {
   if (tenantSlug !== "hvac-ops-pro") {
     if (tenantSlug !== "retire-ready-mn") {
@@ -330,7 +338,7 @@ function enrichTenantFields(
       return fields;
     }
 
-    return {
+    const enrichedFields: CaptureValues = {
       ...fields,
       currentSavings: result.currentSavingsEstimate,
       projectedMonthlyPortfolioIncome: result.projectedMonthlyPortfolioIncome,
@@ -338,6 +346,23 @@ function enrichTenantFields(
       monthlyIncomeGap: result.monthlyGap,
       retirementScore: result.score,
       scoreBand: result.band
+    };
+    const intent = calculateRetireReadyIntent(enrichedFields, source);
+
+    if (!intent) {
+      return enrichedFields;
+    }
+
+    return {
+      ...enrichedFields,
+      annuityIntentScore: intent.score,
+      annuityIntentBand: intent.band,
+      annuityIntentSegment: intent.segment,
+      annuityIntentReasons: intent.reasons,
+      recommendedAction: intent.recommendedAction,
+      automationPriority: intent.automationPriority,
+      nextBestEmailId: intent.nextBestEmailId,
+      advisorTalkingPoints: intent.advisorTalkingPoints
     };
   }
 
@@ -381,6 +406,33 @@ function calculateRetireReadyScore(fields: CaptureValues) {
     monthlySocialSecurity: numberField(fields.monthlySocialSecurity) ?? 0,
     desiredMonthlyIncome: numberField(fields.desiredMonthlyIncome) ?? 0,
     primaryConcern
+  });
+}
+
+function calculateRetireReadyIntent(fields: CaptureValues, source: LeadSourceInput | undefined) {
+  const currentSavingsBucket = stringField(fields.currentSavingsBucket);
+  const primaryConcern = stringField(fields.primaryConcern);
+  const incomePreference = stringField(fields.incomePreference);
+
+  if (
+    !isSavingsBucket(currentSavingsBucket) ||
+    !isPrimaryConcern(primaryConcern) ||
+    !isIncomePreference(incomePreference)
+  ) {
+    return null;
+  }
+
+  return calculateAnnuityBuyerIntent({
+    currentAge: numberField(fields.currentAge) ?? 0,
+    targetRetirementAge: numberField(fields.targetRetirementAge) ?? 0,
+    currentSavingsBucket,
+    monthlySocialSecurity: numberField(fields.monthlySocialSecurity) ?? 0,
+    desiredMonthlyIncome: numberField(fields.desiredMonthlyIncome) ?? 0,
+    primaryConcern,
+    incomePreference,
+    phone: stringField(fields.phone),
+    tcpaConsent: booleanField(fields.tcpaConsent),
+    articleSlug: source?.articleSlug
   });
 }
 
@@ -501,6 +553,18 @@ function numberField(value: unknown): number | null {
   return null;
 }
 
+function booleanField(value: unknown): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  return value === "true";
+}
+
+function readStringArrayField(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
 function isSavingsBucket(value: string | undefined): value is SavingsBucket {
   return (
     value === "under-250000" ||
@@ -508,6 +572,16 @@ function isSavingsBucket(value: string | undefined): value is SavingsBucket {
     value === "500000-1000000" ||
     value === "1000000-2000000" ||
     value === "over-2000000"
+  );
+}
+
+function isIncomePreference(value: string | undefined): value is IncomePreference {
+  return (
+    value === "dependable_income" ||
+    value === "growth_flexibility" ||
+    value === "tax_efficiency" ||
+    value === "legacy_flexibility" ||
+    value === "not_sure"
   );
 }
 

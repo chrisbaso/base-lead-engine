@@ -72,6 +72,25 @@ export const retireReadyMnLeadCapture = {
       ]
     },
     {
+      id: "income-preference",
+      title: "Income planning preference",
+      fields: [
+        {
+          id: "incomePreference",
+          label: "Planning question",
+          type: "select",
+          required: true,
+          options: [
+            "dependable_income",
+            "growth_flexibility",
+            "tax_efficiency",
+            "legacy_flexibility",
+            "not_sure"
+          ]
+        }
+      ]
+    },
+    {
       id: "email-gate",
       title: "See your full score",
       fields: [
