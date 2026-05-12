@@ -30,10 +30,18 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
   const email = typeof fields.email === "string" ? fields.email : null;
   const phone = typeof fields.phone === "string" ? fields.phone : null;
   const firstName = typeof fields.firstName === "string" ? fields.firstName : null;
+  const lastName = typeof fields.lastName === "string" ? fields.lastName : null;
   const recommendedSoftware =
     typeof fields.recommendedSoftware === "string" ? fields.recommendedSoftware : null;
   const quizVariant = typeof fields.quizVariant === "string" ? fields.quizVariant : null;
   const emailVariant = typeof fields.emailVariant === "string" ? fields.emailVariant : null;
+  const currentAge = readNumberField(fields.currentAge);
+  const currentSavings = readNumberField(fields.currentSavings);
+  const targetRetirementAge = readNumberField(fields.targetRetirementAge);
+  const monthlySocialSecurity = readNumberField(fields.monthlySocialSecurity);
+  const desiredMonthlyIncome = readNumberField(fields.desiredMonthlyIncome);
+  const retirementScore = readNumberField(fields.retirementScore);
+  const scoreBand = typeof fields.scoreBand === "string" ? fields.scoreBand : null;
   const scoreResult = computeLeadScore(options.tenant, fields);
 
   const { data, error } = await options.supabase
@@ -48,6 +56,14 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
         source: parsed.source,
         data: fields,
         first_name: firstName,
+        last_name: lastName,
+        age: currentAge,
+        current_savings: currentSavings,
+        target_retirement_age: targetRetirementAge,
+        monthly_social_security: monthlySocialSecurity,
+        desired_monthly_income: desiredMonthlyIncome,
+        retirement_score: retirementScore,
+        score_band: scoreBand,
         quiz_answers: options.tenant.leadCapture.type === "quiz" ? fields : {},
         recommended_software: recommendedSoftware,
         quiz_variant: quizVariant,
@@ -165,4 +181,17 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
     eventId,
     isPartial: parsed.isPartial
   };
+}
+
+function readNumberField(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
 }
