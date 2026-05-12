@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarizeVariantStats } from "./data";
+import { summarizeContentPerformance, summarizeVariantStats } from "./data";
 
 describe("summarizeVariantStats", () => {
   it("rolls up quiz and email variant performance", () => {
@@ -46,6 +46,47 @@ describe("summarizeVariantStats", () => {
         openRate: 100,
         clickRate: 100,
         affiliateClicks: 1
+      }
+    ]);
+  });
+});
+
+describe("summarizeContentPerformance", () => {
+  it("rolls article funnel events into per-article performance rows", () => {
+    const rows = summarizeContentPerformance({
+      publications: [
+        {
+          slug: "retirement-income-score-explained",
+          title: "What Your Retirement Income Score Means",
+          category: "Retirement Income Planning",
+          status: "published",
+          published_at: "2026-05-03"
+        }
+      ],
+      events: [
+        { event_type: "article_viewed", metadata: { articleSlug: "retirement-income-score-explained" } },
+        { event_type: "cta_clicked", metadata: { articleSlug: "retirement-income-score-explained" } },
+        { event_type: "quiz_started_from_article", metadata: { articleSlug: "retirement-income-score-explained" } },
+        { event_type: "lead_captured_from_article", metadata: { articleSlug: "retirement-income-score-explained" } },
+        { event_type: "phone_captured_from_article", metadata: { articleSlug: "retirement-income-score-explained" } },
+        { event_type: "advisor_assigned_from_article", metadata: { articleSlug: "retirement-income-score-explained" } }
+      ]
+    });
+
+    expect(rows).toEqual([
+      {
+        slug: "retirement-income-score-explained",
+        title: "What Your Retirement Income Score Means",
+        category: "Retirement Income Planning",
+        status: "published",
+        publishedAt: "2026-05-03",
+        views: 1,
+        ctaClicks: 1,
+        quizStarts: 1,
+        leadCaptures: 1,
+        phoneCaptures: 1,
+        advisorAssignments: 1,
+        leadCaptureRate: 100
       }
     ]);
   });

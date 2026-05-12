@@ -8,6 +8,12 @@ export type InsightPost = {
   category: string;
   status: "draft" | "published";
   publishedAt: string;
+  updatedAt: string;
+  authorType: string;
+  reviewedBy: string;
+  complianceStatus: "pending" | "approved" | "changes_requested";
+  sourceLinks: string[];
+  ctaVariant: string;
   readingMinutes: number;
   body: string;
 };
@@ -27,7 +33,7 @@ export async function getInsightPosts({ includeDrafts = false } = {}): Promise<I
   const files = await fs.readdir(contentDir);
   const posts = await Promise.all(
     files
-      .filter((file) => file.endsWith(".md"))
+      .filter((file) => file.endsWith(".mdx"))
       .map(async (file) => parsePost(file, await fs.readFile(path.join(contentDir, file), "utf8")))
   );
 
@@ -82,25 +88,70 @@ function parsePost(file: string, raw: string): InsightPost {
     throw new Error(`Insight post is missing frontmatter or body: ${file}`);
   }
 
-  const frontmatter = Object.fromEntries(
-    frontmatterText.split("\n").map((line) => {
-      const [key, ...value] = line.split(":");
-      return [(key ?? "").trim(), value.join(":").trim().replace(/^"|"$/g, "")];
-    })
-  );
+  const frontmatter = parseFrontmatter(frontmatterText);
   const body = bodyText.trim();
   const wordCount = body.split(/\s+/).filter(Boolean).length;
+  const slug = required(frontmatter.slug, file, "slug");
+  const status = frontmatter.status === "draft" ? "draft" : "published";
+  const complianceStatus = parseComplianceStatus(frontmatter.compliance_status);
 
   return {
-    slug: file.replace(/\.md$/u, ""),
+    slug,
     title: required(frontmatter.title, file, "title"),
     description: required(frontmatter.description, file, "description"),
     category: required(frontmatter.category, file, "category"),
-    status: frontmatter.status === "draft" ? "draft" : "published",
-    publishedAt: required(frontmatter.publishedAt, file, "publishedAt"),
+    status,
+    publishedAt: required(frontmatter.published_at, file, "published_at"),
+    updatedAt: required(frontmatter.updated_at, file, "updated_at"),
+    authorType: required(frontmatter.author_type, file, "author_type"),
+    reviewedBy: required(frontmatter.reviewed_by, file, "reviewed_by"),
+    complianceStatus,
+    sourceLinks: parseSourceLinks(required(frontmatter.source_links, file, "source_links")),
+    ctaVariant: required(frontmatter.cta_variant, file, "cta_variant"),
     readingMinutes: Math.max(1, Math.round(wordCount / 220)),
     body
   };
+}
+
+function parseFrontmatter(frontmatterText: string): Record<string, string> {
+  return Object.fromEntries(
+    frontmatterText
+      .split("\n")
+      .map((line) => {
+        const [key, ...value] = line.split(":");
+        const trimmedKey = key?.trim();
+        if (!trimmedKey) {
+          return null;
+        }
+
+        return [trimmedKey, value.join(":").trim().replace(/^"|"$/g, "")] as const;
+      })
+      .filter((entry): entry is readonly [string, string] => entry !== null)
+  );
+}
+
+function parseComplianceStatus(value: string | undefined): InsightPost["complianceStatus"] {
+  if (value === "approved" || value === "changes_requested") {
+    return value;
+  }
+
+  return "pending";
+}
+
+function parseSourceLinks(value: string): string[] {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    return trimmed
+      .slice(1, -1)
+      .split(",")
+      .map((item) => item.trim().replace(/^"|"$/g, ""))
+      .filter(Boolean);
+  }
+
+  return trimmed
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function required(value: string | undefined, file: string, key: string): string {

@@ -71,6 +71,104 @@ export type FunnelStats = {
   costPerClosedCase: number;
 };
 
+export type ContentOpsOverview = {
+  ideas: number;
+  drafts: number;
+  pendingReviews: number;
+  published: number;
+  unresolvedFlags: number;
+  recentAgentRuns: AgentRunRow[];
+};
+
+export type ContentIdeaRow = {
+  id: string;
+  topic: string;
+  category: string;
+  status: string;
+  priority: string;
+  target_keyword: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ContentDraftRow = {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  status: string;
+  author_type: string;
+  compliance_status: string;
+  cta_variant: string;
+  word_count: number;
+  updated_at: string;
+};
+
+export type ComplianceFlagRow = {
+  id: string;
+  draft_id: string | null;
+  severity: string;
+  flag_type: string;
+  message: string;
+  resolved_at: string | null;
+  created_at: string;
+};
+
+export type ContentReviewRow = {
+  id: string;
+  draft_id: string | null;
+  reviewer: string;
+  status: string;
+  checklist: Record<string, unknown>;
+  notes: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+export type ContentReviewQueue = {
+  drafts: ContentDraftRow[];
+  flags: ComplianceFlagRow[];
+  reviews: ContentReviewRow[];
+};
+
+export type AgentRunRow = {
+  id: string;
+  run_type: string;
+  agent_name: string;
+  status: string;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export type ContentPublicationInput = {
+  slug: string;
+  title: string;
+  category: string;
+  status: string;
+  published_at: string | null;
+};
+
+export type ContentEventInput = {
+  event_type: string;
+  metadata: Record<string, unknown>;
+};
+
+export type ContentPerformanceRow = {
+  slug: string;
+  title: string;
+  category: string;
+  status: string;
+  publishedAt: string | null;
+  views: number;
+  ctaClicks: number;
+  quizStarts: number;
+  leadCaptures: number;
+  phoneCaptures: number;
+  advisorAssignments: number;
+  leadCaptureRate: number;
+};
+
 export type TenantDashboardStats = {
   totalLeads: number;
   quizCompletionRate: number;
@@ -328,6 +426,172 @@ export async function getFunnelStats(tenant: TenantConfig): Promise<AdminDataSta
   };
 }
 
+export async function getContentOpsOverview(tenant: TenantConfig): Promise<AdminDataState<ContentOpsOverview>> {
+  const client = getServiceClient();
+  if (client.status === "unavailable") {
+    return client;
+  }
+
+  const [ideas, drafts, reviews, publications, flags, runs] = await Promise.all([
+    client.data.from("content_ideas").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.identity.tenantId),
+    client.data
+      .from("content_drafts")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.identity.tenantId)
+      .eq("status", "draft"),
+    client.data
+      .from("content_reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.identity.tenantId)
+      .eq("status", "pending"),
+    client.data
+      .from("content_publications")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.identity.tenantId)
+      .eq("status", "published"),
+    client.data
+      .from("compliance_flags")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.identity.tenantId)
+      .is("resolved_at", null),
+    client.data
+      .from("agent_runs")
+      .select("id, run_type, agent_name, status, created_at, completed_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .order("created_at", { ascending: false })
+      .limit(5)
+      .overrideTypes<AgentRunRow[], { merge: false }>()
+  ]);
+
+  const error = ideas.error ?? drafts.error ?? reviews.error ?? publications.error ?? flags.error ?? runs.error;
+  if (error) {
+    return { status: "unavailable", reason: error.message };
+  }
+
+  return {
+    status: "ready",
+    data: {
+      ideas: ideas.count ?? 0,
+      drafts: drafts.count ?? 0,
+      pendingReviews: reviews.count ?? 0,
+      published: publications.count ?? 0,
+      unresolvedFlags: flags.count ?? 0,
+      recentAgentRuns: runs.data ?? []
+    }
+  };
+}
+
+export async function getContentIdeas(tenant: TenantConfig): Promise<AdminDataState<ContentIdeaRow[]>> {
+  const client = getServiceClient();
+  if (client.status === "unavailable") {
+    return client;
+  }
+
+  const { data, error } = await client.data
+    .from("content_ideas")
+    .select("id, topic, category, status, priority, target_keyword, notes, created_at, updated_at")
+    .eq("tenant_id", tenant.identity.tenantId)
+    .order("created_at", { ascending: false })
+    .limit(100)
+    .overrideTypes<ContentIdeaRow[], { merge: false }>();
+
+  if (error) {
+    return { status: "unavailable", reason: error.message };
+  }
+
+  return { status: "ready", data };
+}
+
+export async function getContentReviewQueue(tenant: TenantConfig): Promise<AdminDataState<ContentReviewQueue>> {
+  const client = getServiceClient();
+  if (client.status === "unavailable") {
+    return client;
+  }
+
+  const [drafts, flags, reviews] = await Promise.all([
+    client.data
+      .from("content_drafts")
+      .select("id, slug, title, category, status, author_type, compliance_status, cta_variant, word_count, updated_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .in("status", ["draft", "review", "published"])
+      .order("updated_at", { ascending: false })
+      .limit(100)
+      .overrideTypes<ContentDraftRow[], { merge: false }>(),
+    client.data
+      .from("compliance_flags")
+      .select("id, draft_id, severity, flag_type, message, resolved_at, created_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .is("resolved_at", null)
+      .order("created_at", { ascending: false })
+      .limit(100)
+      .overrideTypes<ComplianceFlagRow[], { merge: false }>(),
+    client.data
+      .from("content_reviews")
+      .select("id, draft_id, reviewer, status, checklist, notes, reviewed_at, created_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .overrideTypes<ContentReviewRow[], { merge: false }>()
+  ]);
+
+  const error = drafts.error ?? flags.error ?? reviews.error;
+  if (error) {
+    return { status: "unavailable", reason: error.message };
+  }
+
+  return {
+    status: "ready",
+    data: {
+      drafts: drafts.data ?? [],
+      flags: flags.data ?? [],
+      reviews: reviews.data ?? []
+    }
+  };
+}
+
+export async function getContentPerformance(tenant: TenantConfig): Promise<AdminDataState<ContentPerformanceRow[]>> {
+  const client = getServiceClient();
+  if (client.status === "unavailable") {
+    return client;
+  }
+
+  const trackedEvents = [
+    "article_viewed",
+    "cta_clicked",
+    "quiz_started_from_article",
+    "lead_captured_from_article",
+    "phone_captured_from_article",
+    "advisor_assigned_from_article"
+  ];
+  const [publications, events] = await Promise.all([
+    client.data
+      .from("content_publications")
+      .select("slug, title, category, status, published_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .order("published_at", { ascending: false })
+      .overrideTypes<ContentPublicationInput[], { merge: false }>(),
+    client.data
+      .from("events")
+      .select("event_type, metadata")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .in("event_type", trackedEvents)
+      .overrideTypes<ContentEventInput[], { merge: false }>()
+  ]);
+
+  const error = publications.error ?? events.error;
+  if (error) {
+    return { status: "unavailable", reason: error.message };
+  }
+
+  return {
+    status: "ready",
+    data: summarizeContentPerformance({
+      publications: publications.data ?? [],
+      events: events.data ?? []
+    })
+  };
+}
+
 export async function getEmailSendStats(tenant: TenantConfig): Promise<AdminDataState<EmailSendStats>> {
   const client = getServiceClient();
   if (client.status === "unavailable") {
@@ -499,6 +763,83 @@ export function summarizeVariantStats(input: {
     quizVariants: mapVariantRows(quizVariants),
     emailVariants: mapVariantRows(emailVariants)
   };
+}
+
+export function summarizeContentPerformance(input: {
+  publications: ContentPublicationInput[];
+  events: ContentEventInput[];
+}): ContentPerformanceRow[] {
+  const rows = new Map<string, ContentPerformanceAccumulator>();
+
+  for (const publication of input.publications) {
+    rows.set(publication.slug, {
+      slug: publication.slug,
+      title: publication.title,
+      category: publication.category,
+      status: publication.status,
+      publishedAt: publication.published_at,
+      views: 0,
+      ctaClicks: 0,
+      quizStarts: 0,
+      leadCaptures: 0,
+      phoneCaptures: 0,
+      advisorAssignments: 0
+    });
+  }
+
+  for (const event of input.events) {
+    const slug = readMetadataString(event.metadata, "articleSlug") ?? readMetadataString(event.metadata, "slug");
+    if (!slug) {
+      continue;
+    }
+
+    const row =
+      rows.get(slug) ??
+      ensureContentPerformance(rows, {
+        slug,
+        title: slug,
+        category: readMetadataString(event.metadata, "articleCategory") ?? "Unknown",
+        status: "untracked",
+        publishedAt: null,
+        views: 0,
+        ctaClicks: 0,
+        quizStarts: 0,
+        leadCaptures: 0,
+        phoneCaptures: 0,
+        advisorAssignments: 0
+      });
+
+    if (event.event_type === "article_viewed") {
+      row.views += 1;
+    } else if (event.event_type === "cta_clicked") {
+      row.ctaClicks += 1;
+    } else if (event.event_type === "quiz_started_from_article") {
+      row.quizStarts += 1;
+    } else if (event.event_type === "lead_captured_from_article") {
+      row.leadCaptures += 1;
+    } else if (event.event_type === "phone_captured_from_article") {
+      row.phoneCaptures += 1;
+    } else if (event.event_type === "advisor_assigned_from_article") {
+      row.advisorAssignments += 1;
+    }
+  }
+
+  return [...rows.values()]
+    .map((row) => ({
+      ...row,
+      leadCaptureRate: ratio(row.leadCaptures, row.views)
+    }))
+    .sort((a, b) => b.views - a.views || a.title.localeCompare(b.title));
+}
+
+type ContentPerformanceAccumulator = Omit<ContentPerformanceRow, "leadCaptureRate">;
+
+function ensureContentPerformance(
+  rows: Map<string, ContentPerformanceAccumulator>,
+  row: ContentPerformanceAccumulator
+): ContentPerformanceAccumulator {
+  rows.set(row.slug, row);
+  return row;
 }
 
 type VariantAccumulator = {

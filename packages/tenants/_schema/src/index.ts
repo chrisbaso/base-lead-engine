@@ -39,7 +39,13 @@ export const trackingEventNameSchema = z.enum([
   "LeadStepCompleted",
   "LeadCompleted",
   "LeadQualified",
-  "ViewContent"
+  "ViewContent",
+  "article_viewed",
+  "cta_clicked",
+  "quiz_started_from_article",
+  "lead_captured_from_article",
+  "phone_captured_from_article",
+  "advisor_assigned_from_article"
 ]);
 
 const stateCodeSchema = z.string().regex(/^[A-Z]{2}$/);

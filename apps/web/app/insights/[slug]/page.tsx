@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { RetireReadyArticleTrackingClient } from "../../_components/RetireReadyArticleTrackingClient";
 import { RetireReadyMnLayout } from "../../_components/RetireReadyMnPages";
 import { getInsightPost, getInsightPosts, renderMarkdown } from "../../_lib/retire-ready-insights";
 import { getCurrentTenant } from "../../_lib/tenant";
@@ -28,7 +29,8 @@ export async function generateMetadata({ params }: InsightPageProps): Promise<Me
       title: post.title,
       description: post.description,
       type: "article",
-      publishedTime: post.publishedAt
+      publishedTime: post.publishedAt,
+      modifiedTime: post.updatedAt
     }
   };
 }
@@ -51,6 +53,7 @@ export default async function InsightPage({ params }: InsightPageProps) {
     headline: post.title,
     description: post.description,
     datePublished: post.publishedAt,
+    dateModified: post.updatedAt,
     author: {
       "@type": "Organization",
       name: "RetireReadyMN"
@@ -72,6 +75,17 @@ export default async function InsightPage({ params }: InsightPageProps) {
             <time>{post.publishedAt}</time>
           </header>
           <div className="rrmn-article-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(post.body) }} />
+          <section className="rrmn-article-sources" aria-label="Sources">
+            <h2>Sources</h2>
+            <ul>
+              {post.sourceLinks.map((source) => (
+                <li key={source}>
+                  <a href={source}>{source}</a>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <RetireReadyArticleTrackingClient post={post} />
         </article>
         <script
           type="application/ld+json"

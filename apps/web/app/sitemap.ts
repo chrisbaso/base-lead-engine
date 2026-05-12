@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...posts.map((post) => ({
       url: `${baseUrl}/insights/${post.slug}`,
-      lastModified: new Date(post.publishedAt)
+      lastModified: new Date(post.updatedAt)
     }))
   ];
 }

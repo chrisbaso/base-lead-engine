@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, Mail, Phone } from "lucide-react";
 import type { TenantConfig } from "@ble/tenant-schema";
 import type { CaptureValues } from "@ble/core/lead-capture/components";
@@ -12,7 +12,7 @@ import {
   type RetirementScoreResult,
   type SavingsBucket
 } from "@ble/tenant-retire-ready-mn/lib/retirement-score-engine";
-import { recordRetireReadyStepAction, submitLeadAction } from "../actions";
+import { recordRetireReadyContentEventAction, recordRetireReadyStepAction, submitLeadAction } from "../actions";
 
 type RetireReadyMnCheckupClientProps = {
   tenant: TenantConfig;
@@ -114,7 +114,10 @@ function readSource(heroVariantId: string, quizFrameId: string) {
       utmCampaign: params.get("utm_campaign") ?? undefined,
       utmContent: params.get("utm_content") ?? undefined,
       heroVariant: params.get("hero_variant") ?? heroVariantId,
-      quizFrame: params.get("quiz_frame") ?? quizFrameId
+      quizFrame: params.get("quiz_frame") ?? quizFrameId,
+      articleSlug: params.get("article_slug") ?? undefined,
+      articleCategory: params.get("article_category") ?? undefined,
+      ctaVariant: params.get("cta_variant") ?? undefined
     }).filter((entry): entry is [string, string] => typeof entry[1] === "string")
   );
 }
@@ -191,6 +194,31 @@ export function RetireReadyMnCheckupClient({
   const step = steps[stepIndex] ?? fallbackStep;
   const score = useMemo(() => calculateScore(values), [values]);
   const progress = Math.round(((stepIndex + 1) / steps.length) * 100);
+
+  useEffect(() => {
+    const source = readSource(heroVariantId, quizFrameId);
+    if (!source.articleSlug) {
+      return;
+    }
+
+    const sessionKey = `rrmn:quiz-started:${source.articleSlug}`;
+    if (window.sessionStorage.getItem(sessionKey)) {
+      return;
+    }
+
+    window.sessionStorage.setItem(sessionKey, "1");
+    void recordRetireReadyContentEventAction({
+      eventType: "quiz_started_from_article",
+      articleSlug: source.articleSlug,
+      ...(source.articleCategory ? { articleCategory: source.articleCategory } : {}),
+      ...(source.ctaVariant ? { ctaVariant: source.ctaVariant } : {}),
+      metadata: Object.fromEntries(
+        Object.entries({ url: source.url, referrer: source.referrer }).filter(
+          (entry): entry is [string, string] => typeof entry[1] === "string"
+        )
+      )
+    });
+  }, [heroVariantId, quizFrameId]);
 
   function updateValue<K extends keyof CheckupValues>(key: K, value: CheckupValues[K]) {
     setError(null);

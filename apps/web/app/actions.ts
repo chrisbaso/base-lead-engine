@@ -14,20 +14,52 @@ import { recommendHvacSoftware } from "@ble/tenant-hvac-ops-pro/lib/recommendati
 import { calculateRetirementIncomeScore } from "@ble/tenant-retire-ready-mn/lib/retirement-score-engine";
 import type { PrimaryConcern, SavingsBucket } from "@ble/tenant-retire-ready-mn/lib/retirement-score-engine";
 
+type LeadSourceInput = {
+  url?: string;
+  referrer?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  quizVariant?: string;
+  emailVariant?: string;
+  heroVariant?: string;
+  quizFrame?: string;
+  articleSlug?: string;
+  articleCategory?: string;
+  ctaVariant?: string;
+};
+
+type RetireReadyContentEventType =
+  | "article_viewed"
+  | "cta_clicked"
+  | "quiz_started_from_article"
+  | "lead_captured_from_article"
+  | "phone_captured_from_article"
+  | "advisor_assigned_from_article";
+
+type PerformanceCounterField =
+  | "views"
+  | "cta_clicks"
+  | "quiz_starts"
+  | "lead_captures"
+  | "phone_captures"
+  | "advisor_assignments";
+
+const contentEventCounters: Record<RetireReadyContentEventType, PerformanceCounterField> = {
+  article_viewed: "views",
+  cta_clicked: "cta_clicks",
+  quiz_started_from_article: "quiz_starts",
+  lead_captured_from_article: "lead_captures",
+  phone_captured_from_article: "phone_captures",
+  advisor_assigned_from_article: "advisor_assignments"
+};
+
 export async function submitLeadAction(input: {
   fields: CaptureValues;
   stepId?: string;
   isPartial: boolean;
-  source?: {
-    url?: string;
-    referrer?: string;
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
-    utmContent?: string;
-    quizVariant?: string;
-    emailVariant?: string;
-  };
+  source?: LeadSourceInput;
   botToken?: string;
 }) {
   const headerList = await headers();
@@ -78,8 +110,9 @@ export async function submitLeadAction(input: {
       step_id: input.stepId
     });
 
-    return await submitLead({
-      supabase: getSupabaseClient("service"),
+    const supabase = getSupabaseClient("service");
+    const result = await submitLead({
+      supabase,
       tenant,
       submission: {
         tenantId: tenant.identity.tenantId,
@@ -107,6 +140,18 @@ export async function submitLeadAction(input: {
           }
         : {})
     });
+
+    if (!input.isPartial && tenant.identity.slug === "retire-ready-mn" && input.source?.articleSlug) {
+      await recordRetireReadyContentEvent({
+        supabase,
+        tenantId: tenant.identity.tenantId,
+        leadId: result.leadId,
+        eventType: "phone_captured_from_article",
+        source: input.source
+      });
+    }
+
+    return result;
   } catch (error) {
     await captureException(error, {
       tenant_id: tenant.identity.tenantId,
@@ -120,16 +165,7 @@ export async function submitLeadAction(input: {
 export async function recordRetireReadyStepAction(input: {
   fields: CaptureValues;
   stepId: string;
-  source?: {
-    url?: string;
-    referrer?: string;
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
-    utmContent?: string;
-    heroVariant?: string;
-    quizFrame?: string;
-  };
+  source?: LeadSourceInput;
 }) {
   const headerList = await headers();
   const host = headerList.get("host") ?? "localhost";
@@ -222,7 +258,61 @@ export async function recordRetireReadyStepAction(input: {
     throw new Error(`RetireReadyMN analytics event insert failed: ${eventError.message}`);
   }
 
+  if (input.stepId === "email-gate" && input.source?.articleSlug) {
+    await recordRetireReadyContentEvent({
+      supabase,
+      tenantId: tenant.identity.tenantId,
+      leadId,
+      eventType: "lead_captured_from_article",
+      source: input.source
+    });
+  }
+
   return { recorded: true, leadId };
+}
+
+export async function recordRetireReadyContentEventAction(input: {
+  eventType: RetireReadyContentEventType;
+  articleSlug: string;
+  articleCategory?: string;
+  ctaVariant?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const headerList = await headers();
+  const host = headerList.get("host") ?? "localhost";
+  const tenant = getTenantConfig(process.env.TENANT_SLUG ?? resolveTenantSlug(host));
+
+  if (tenant.identity.slug !== "retire-ready-mn") {
+    return { recorded: false };
+  }
+
+  const eventType = input.eventType;
+  const forwardedFor = headerList.get("x-forwarded-for");
+  const ipAddress = forwardedFor?.split(",")[0]?.trim();
+  const supabase = getSupabaseClient("service");
+  const source = Object.fromEntries(
+    Object.entries({
+      url: typeof input.metadata?.url === "string" ? input.metadata.url : undefined,
+      referrer: headerList.get("referer") ?? undefined,
+      articleSlug: input.articleSlug,
+      articleCategory: input.articleCategory,
+      ctaVariant: input.ctaVariant
+    }).filter((entry): entry is [string, string] => typeof entry[1] === "string")
+  ) as LeadSourceInput;
+
+  await recordRetireReadyContentEvent({
+    supabase,
+    tenantId: tenant.identity.tenantId,
+    eventType,
+    source,
+    metadata: {
+      ...input.metadata,
+      userAgent: headerList.get("user-agent") ?? undefined,
+      ipAddress
+    }
+  });
+
+  return { recorded: true };
 }
 
 function enrichTenantFields(
@@ -292,6 +382,106 @@ function calculateRetireReadyScore(fields: CaptureValues) {
     desiredMonthlyIncome: numberField(fields.desiredMonthlyIncome) ?? 0,
     primaryConcern
   });
+}
+
+async function recordRetireReadyContentEvent({
+  supabase,
+  tenantId,
+  eventType,
+  leadId = null,
+  source,
+  metadata = {}
+}: {
+  supabase: ReturnType<typeof getSupabaseClient>;
+  tenantId: string;
+  eventType: RetireReadyContentEventType;
+  leadId?: string | null;
+  source?: LeadSourceInput;
+  metadata?: Record<string, unknown>;
+}) {
+  const articleSlug = source?.articleSlug;
+  if (!articleSlug) {
+    return;
+  }
+
+  const payload = {
+    ...metadata,
+    articleSlug,
+    articleCategory: source.articleCategory,
+    ctaVariant: source.ctaVariant,
+    source
+  };
+
+  const { error } = await supabase.from("events").insert({
+    tenant_id: tenantId,
+    lead_id: leadId,
+    event_type: eventType,
+    metadata: payload
+  });
+
+  if (error) {
+    throw new Error(`RetireReadyMN content event insert failed: ${error.message}`);
+  }
+
+  await incrementContentPerformance({ supabase, tenantId, articleSlug, eventType });
+}
+
+async function incrementContentPerformance({
+  supabase,
+  tenantId,
+  articleSlug,
+  eventType
+}: {
+  supabase: ReturnType<typeof getSupabaseClient>;
+  tenantId: string;
+  articleSlug: string;
+  eventType: RetireReadyContentEventType;
+}) {
+  const counterField = contentEventCounters[eventType];
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("content_performance")
+    .select("id, views, cta_clicks, quiz_starts, lead_captures, phone_captures, advisor_assignments")
+    .eq("tenant_id", tenantId)
+    .eq("slug", articleSlug)
+    .maybeSingle<
+      {
+        id: string;
+      } & Record<PerformanceCounterField, number | null>
+    >();
+
+  if (error) {
+    throw new Error(`RetireReadyMN content performance lookup failed: ${error.message}`);
+  }
+
+  if (!data) {
+    const { error: insertError } = await supabase.from("content_performance").insert({
+      tenant_id: tenantId,
+      slug: articleSlug,
+      [counterField]: 1,
+      last_event_at: now,
+      updated_at: now
+    });
+
+    if (insertError) {
+      throw new Error(`RetireReadyMN content performance insert failed: ${insertError.message}`);
+    }
+
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from("content_performance")
+    .update({
+      [counterField]: (data[counterField] ?? 0) + 1,
+      last_event_at: now,
+      updated_at: now
+    })
+    .eq("id", data.id);
+
+  if (updateError) {
+    throw new Error(`RetireReadyMN content performance update failed: ${updateError.message}`);
+  }
 }
 
 function stringField(value: unknown): string | undefined {
