@@ -8,6 +8,8 @@ export const leadSourceSchema = z.object({
   utmMedium: z.string().optional(),
   utmCampaign: z.string().optional(),
   utmContent: z.string().optional(),
+  quizVariant: z.string().optional(),
+  emailVariant: z.string().optional(),
   userAgent: z.string().optional(),
   ipAddress: z.string().optional()
 });

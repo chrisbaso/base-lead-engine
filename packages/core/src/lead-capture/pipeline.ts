@@ -32,6 +32,8 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
   const firstName = typeof fields.firstName === "string" ? fields.firstName : null;
   const recommendedSoftware =
     typeof fields.recommendedSoftware === "string" ? fields.recommendedSoftware : null;
+  const quizVariant = typeof fields.quizVariant === "string" ? fields.quizVariant : null;
+  const emailVariant = typeof fields.emailVariant === "string" ? fields.emailVariant : null;
   const scoreResult = computeLeadScore(options.tenant, fields);
 
   const { data, error } = await options.supabase
@@ -48,6 +50,8 @@ export async function submitLead(options: LeadPipelineOptions): Promise<LeadSubm
         first_name: firstName,
         quiz_answers: options.tenant.leadCapture.type === "quiz" ? fields : {},
         recommended_software: recommendedSoftware,
+        quiz_variant: quizVariant,
+        email_variant: emailVariant,
         utm_source: parsed.source.utmSource,
         utm_campaign: parsed.source.utmCampaign,
         utm_content: parsed.source.utmContent,

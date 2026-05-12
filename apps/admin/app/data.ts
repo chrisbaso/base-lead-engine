@@ -49,6 +49,41 @@ export type TenantDashboardStats = {
   emailClickRate: number;
   affiliateClicks: number;
   estimatedConversions: number;
+  variantPerformance: VariantPerformance;
+};
+
+export type VariantPerformanceRow = {
+  variantId: string;
+  leads: number;
+  partials: number;
+  sends: number;
+  openRate: number;
+  clickRate: number;
+  affiliateClicks: number;
+  estimatedConversions: number;
+};
+
+export type VariantPerformance = {
+  quizVariants: VariantPerformanceRow[];
+  emailVariants: VariantPerformanceRow[];
+};
+
+type VariantLeadRow = {
+  status: string;
+  quiz_variant: string | null;
+  email_variant: string | null;
+};
+
+type VariantEmailSendRow = {
+  status: string;
+  opened_at: string | null;
+  clicked_at: string | null;
+  variant_id: string | null;
+};
+
+type VariantEventRow = {
+  event_type: string;
+  metadata: Record<string, unknown>;
 };
 
 export type AdminOverview = {
@@ -242,9 +277,9 @@ export async function getTenantDashboardStats(
   const [leads, leadEvents, emailSends, events] = await Promise.all([
     client.data
       .from("leads")
-      .select("id, status")
+      .select("id, status, quiz_variant, email_variant")
       .eq("tenant_id", tenant.identity.tenantId)
-      .overrideTypes<Array<{ id: string; status: string }>, { merge: false }>(),
+      .overrideTypes<Array<{ id: string } & VariantLeadRow>, { merge: false }>(),
     client.data
       .from("lead_events")
       .select("event_name")
@@ -252,14 +287,14 @@ export async function getTenantDashboardStats(
       .overrideTypes<Array<{ event_name: string }>, { merge: false }>(),
     client.data
       .from("email_sends")
-      .select("status, opened_at, clicked_at")
+      .select("status, opened_at, clicked_at, variant_id")
       .eq("tenant_id", tenant.identity.tenantId)
-      .overrideTypes<Array<{ status: string; opened_at: string | null; clicked_at: string | null }>, { merge: false }>(),
+      .overrideTypes<VariantEmailSendRow[], { merge: false }>(),
     client.data
       .from("events")
-      .select("event_type")
+      .select("event_type, metadata")
       .eq("tenant_id", tenant.identity.tenantId)
-      .overrideTypes<Array<{ event_type: string }>, { merge: false }>()
+      .overrideTypes<VariantEventRow[], { merge: false }>()
   ]);
 
   const error = leads.error ?? leadEvents.error ?? emailSends.error ?? events.error;
@@ -278,6 +313,11 @@ export async function getTenantDashboardStats(
   const openedEmails = emailSendRows.filter((send) => send.opened_at).length;
   const clickedEmails = emailSendRows.filter((send) => send.clicked_at).length;
   const affiliateClicks = eventRows.filter((event) => event.event_type === "affiliate.clicked").length;
+  const variantPerformance = summarizeVariantStats({
+    leads: leadRows,
+    emailSends: emailSendRows,
+    events: eventRows
+  });
 
   return {
     status: "ready",
@@ -287,9 +327,124 @@ export async function getTenantDashboardStats(
       emailOpenRate: ratio(openedEmails, sentEmails),
       emailClickRate: ratio(clickedEmails, sentEmails),
       affiliateClicks,
-      estimatedConversions: Math.round(affiliateClicks * 0.12)
+      estimatedConversions: Math.round(affiliateClicks * 0.12),
+      variantPerformance
     }
   };
+}
+
+export function summarizeVariantStats(input: {
+  leads: VariantLeadRow[];
+  emailSends: VariantEmailSendRow[];
+  events: VariantEventRow[];
+}): VariantPerformance {
+  const quizVariants = new Map<string, VariantAccumulator>();
+  const emailVariants = new Map<string, VariantAccumulator>();
+
+  for (const lead of input.leads) {
+    if (lead.quiz_variant) {
+      const row = ensureVariant(quizVariants, lead.quiz_variant);
+      if (lead.status === "partial") {
+        row.partials += 1;
+      } else {
+        row.leads += 1;
+      }
+    }
+
+    if (lead.email_variant) {
+      const row = ensureVariant(emailVariants, lead.email_variant);
+      if (lead.status === "partial") {
+        row.partials += 1;
+      } else {
+        row.leads += 1;
+      }
+    }
+  }
+
+  for (const send of input.emailSends) {
+    if (!send.variant_id) {
+      continue;
+    }
+
+    const row = ensureVariant(emailVariants, send.variant_id);
+    if (send.status === "sent") {
+      row.sends += 1;
+      if (send.opened_at) {
+        row.opens += 1;
+      }
+      if (send.clicked_at) {
+        row.clicks += 1;
+      }
+    }
+  }
+
+  for (const event of input.events) {
+    if (event.event_type !== "affiliate.clicked") {
+      continue;
+    }
+
+    const quizVariant = readMetadataString(event.metadata, "quizVariant");
+    if (quizVariant) {
+      ensureVariant(quizVariants, quizVariant).affiliateClicks += 1;
+    }
+
+    const emailVariant = readMetadataString(event.metadata, "emailVariant");
+    if (emailVariant) {
+      ensureVariant(emailVariants, emailVariant).affiliateClicks += 1;
+    }
+  }
+
+  return {
+    quizVariants: mapVariantRows(quizVariants),
+    emailVariants: mapVariantRows(emailVariants)
+  };
+}
+
+type VariantAccumulator = {
+  variantId: string;
+  leads: number;
+  partials: number;
+  sends: number;
+  opens: number;
+  clicks: number;
+  affiliateClicks: number;
+};
+
+function ensureVariant(variants: Map<string, VariantAccumulator>, variantId: string): VariantAccumulator {
+  const existing = variants.get(variantId);
+  if (existing) {
+    return existing;
+  }
+
+  const created = {
+    variantId,
+    leads: 0,
+    partials: 0,
+    sends: 0,
+    opens: 0,
+    clicks: 0,
+    affiliateClicks: 0
+  };
+  variants.set(variantId, created);
+  return created;
+}
+
+function mapVariantRows(variants: Map<string, VariantAccumulator>): VariantPerformanceRow[] {
+  return [...variants.values()].map((variant) => ({
+    variantId: variant.variantId,
+    leads: variant.leads,
+    partials: variant.partials,
+    sends: variant.sends,
+    openRate: ratio(variant.opens, variant.sends),
+    clickRate: ratio(variant.clicks, variant.sends),
+    affiliateClicks: variant.affiliateClicks,
+    estimatedConversions: Math.round(variant.affiliateClicks * 0.12)
+  }));
+}
+
+function readMetadataString(metadata: Record<string, unknown>, key: string): string | undefined {
+  const value = metadata[key];
+  return typeof value === "string" ? value : undefined;
 }
 
 function ratio(numerator: number, denominator: number) {

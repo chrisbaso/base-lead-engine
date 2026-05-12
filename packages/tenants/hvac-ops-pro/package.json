@@ -6,6 +6,7 @@
   "exports": {
     ".": "./config.ts",
     "./copy": "./copy.ts",
+    "./experiments": "./experiments.ts",
     "./lib/recommendation-engine": "./lib/recommendation-engine.ts"
   },
   "scripts": {

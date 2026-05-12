@@ -92,7 +92,14 @@ function buildTemplateContext(props: TemplateProps): Record<string, string> {
   const platformId = leadData.recommendedPlatformId;
   const affiliateUrl =
     props.appUrl && platformId
-      ? buildAffiliateClickUrl(props.appUrl, props.tenant.identity.slug, props.lead.id, platformId)
+      ? buildAffiliateClickUrl({
+          appUrl: props.appUrl,
+          tenantSlug: props.tenant.identity.slug,
+          leadId: props.lead.id,
+          platformId,
+          ...(leadData.quizVariant ? { quizVariant: leadData.quizVariant } : {}),
+          ...(leadData.emailVariant ? { emailVariant: leadData.emailVariant } : {})
+        })
       : "";
 
   return {
@@ -106,10 +113,30 @@ function buildTemplateContext(props: TemplateProps): Record<string, string> {
   };
 }
 
-function buildAffiliateClickUrl(appUrl: string, tenantSlug: string, leadId: string, platformId: string): string {
+function buildAffiliateClickUrl({
+  appUrl,
+  tenantSlug,
+  leadId,
+  platformId,
+  quizVariant,
+  emailVariant
+}: {
+  appUrl: string;
+  tenantSlug: string;
+  leadId: string;
+  platformId: string;
+  quizVariant?: string;
+  emailVariant?: string;
+}): string {
   const url = new URL(`/api/affiliate/${platformId}`, appUrl);
   url.searchParams.set("tenant", tenantSlug);
   url.searchParams.set("lead_id", leadId);
+  if (quizVariant) {
+    url.searchParams.set("quiz_variant", quizVariant);
+  }
+  if (emailVariant) {
+    url.searchParams.set("email_variant", emailVariant);
+  }
   return url.toString();
 }
 

@@ -9,6 +9,7 @@ import { logEvent } from "@ble/core/logger";
 import { enforceRateLimit } from "@ble/core/rate-limit";
 import { getTenantConfig, resolveTenantSlug } from "@ble/core/tenant-config";
 import { getSupabaseClient } from "@ble/db";
+import { resolveHvacExperimentAssignment } from "@ble/tenant-hvac-ops-pro/experiments";
 import { recommendHvacSoftware } from "@ble/tenant-hvac-ops-pro/lib/recommendation-engine";
 
 export async function submitLeadAction(input: {
@@ -22,6 +23,8 @@ export async function submitLeadAction(input: {
     utmMedium?: string;
     utmCampaign?: string;
     utmContent?: string;
+    quizVariant?: string;
+    emailVariant?: string;
   };
   botToken?: string;
 }) {
@@ -33,7 +36,7 @@ export async function submitLeadAction(input: {
   const userAgent = headerList.get("user-agent") ?? undefined;
   const rateLimitKey = ipAddress ?? input.fields.email?.toString() ?? "anonymous";
   const appUrl = getAppUrl(headerList, host);
-  const fields = enrichTenantFields(tenant.identity.slug, input.fields);
+  const fields = enrichTenantFields(tenant.identity.slug, input.fields, input.source);
 
   try {
     const rateLimit = await enforceRateLimit({
@@ -112,11 +115,19 @@ export async function submitLeadAction(input: {
   }
 }
 
-function enrichTenantFields(tenantSlug: string, fields: CaptureValues): CaptureValues {
+function enrichTenantFields(
+  tenantSlug: string,
+  fields: CaptureValues,
+  source: { quizVariant?: string; emailVariant?: string } | undefined
+): CaptureValues {
   if (tenantSlug !== "hvac-ops-pro") {
     return fields;
   }
 
+  const assignment = resolveHvacExperimentAssignment({
+    quizVariant: stringField(fields.quizVariant) ?? source?.quizVariant,
+    emailVariant: stringField(fields.emailVariant) ?? source?.emailVariant
+  });
   const recommendation = recommendHvacSoftware({
     teamSize: stringField(fields.teamSize),
     biggestHeadache: stringField(fields.biggestHeadache),
@@ -132,7 +143,9 @@ function enrichTenantFields(tenantSlug: string, fields: CaptureValues): CaptureV
     recommendedPlatformId: recommendation.platformId,
     recommendedSoftware: recommendation.platformName,
     recommendationReason: recommendation.reason,
-    affiliateEnvVar: recommendation.affiliateEnvVar
+    affiliateEnvVar: recommendation.affiliateEnvVar,
+    quizVariant: assignment.quizVariant,
+    emailVariant: assignment.emailVariant
   };
 }
 

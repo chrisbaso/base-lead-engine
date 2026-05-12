@@ -7,7 +7,12 @@ export const hvacOpsProSequences = [
     subject: hvacFirstEmailVariations[0].subject,
     delayHours: 0,
     template: hvacFirstEmailVariations[0].template,
-    condition: "always"
+    condition: "always",
+    variants: hvacFirstEmailVariations.map((variation) => ({
+      id: variation.id,
+      subject: variation.subject,
+      template: variation.template
+    }))
   },
   {
     id: "hvac-02-scheduling-mistakes",

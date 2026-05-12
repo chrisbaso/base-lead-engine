@@ -163,7 +163,16 @@ export const tenantConfigSchema = z.object({
         subject: z.string().min(1),
         delayHours: z.number().int().nonnegative(),
         template: z.string().min(1),
-        condition: z.enum(["always", "qualified", "nurture"]).default("always")
+        condition: z.enum(["always", "qualified", "nurture"]).default("always"),
+        variants: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              subject: z.string().min(1),
+              template: z.string().min(1)
+            })
+          )
+          .optional()
       })
     )
   }),

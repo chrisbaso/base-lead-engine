@@ -1,4 +1,5 @@
 import { AdminShell, EmptyState, Metric, MetricGrid } from "../../admin-shell";
+import type { VariantPerformanceRow } from "../../data";
 import { getTenantDashboardStats, resolveAdminTenant } from "../../data";
 
 type DashboardPageProps = {
@@ -31,10 +32,15 @@ export default async function TenantDashboardPage({ searchParams }: DashboardPag
             <Metric label="Est. conversions" value={String(stats.data.estimatedConversions)} />
           </MetricGrid>
           <section>
-            <h2>Tenant Extensibility</h2>
+            <h2>Variant Performance</h2>
+            <VariantTable title="Quiz Copy" rows={stats.data.variantPerformance.quizVariants} />
+            <VariantTable title="First Email" rows={stats.data.variantPerformance.emailVariants} />
+          </section>
+          <section>
+            <h2>Optimization Goal</h2>
             <p>
-              These metrics read from tenant-scoped leads, email sends, and events, so the same view works
-              for future trade funnels once their tenant configs are registered.
+              Primary goal: qualified affiliate clicks per 100 quiz visitors. Secondary goal: estimated
+              affiliate conversions per variant, so losing copy gets cut and winning copy gets more budget.
             </p>
           </section>
         </>
@@ -42,5 +48,45 @@ export default async function TenantDashboardPage({ searchParams }: DashboardPag
         <EmptyState title="Dashboard unavailable" body={stats.reason} />
       )}
     </AdminShell>
+  );
+}
+
+function VariantTable({ title, rows }: { title: string; rows: VariantPerformanceRow[] }) {
+  return (
+    <div className="table-wrap">
+      <h3>{title}</h3>
+      {rows.length === 0 ? (
+        <p>No variant data yet.</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Variant</th>
+              <th>Leads</th>
+              <th>Partials</th>
+              <th>Sends</th>
+              <th>Open</th>
+              <th>Click</th>
+              <th>Affiliate clicks</th>
+              <th>Est. conv.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.variantId}>
+                <td>{row.variantId}</td>
+                <td>{String(row.leads)}</td>
+                <td>{String(row.partials)}</td>
+                <td>{String(row.sends)}</td>
+                <td>{percent(row.openRate)}</td>
+                <td>{percent(row.clickRate)}</td>
+                <td>{String(row.affiliateClicks)}</td>
+                <td>{String(row.estimatedConversions)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }

@@ -20,6 +20,7 @@ export type EmailSendRow = {
   subject: string;
   template: string;
   sequence_id: string;
+  variant_id: string | null;
 };
 
 type ScheduleOptions = {
@@ -40,6 +41,8 @@ type RunOptions = {
 type ResendResult = {
   id?: string;
 };
+
+type EmailSequence = TenantConfig["email"]["sequences"][number];
 
 function shouldSchedule(condition: "always" | "qualified" | "nurture", tenant: TenantConfig, lead: LeadEmailContext) {
   if (condition === "always") {
@@ -115,17 +118,22 @@ export async function scheduleEmailSequence(options: ScheduleOptions): Promise<n
       };
     })
     .filter(({ sequence }) => shouldSchedule(sequence.condition, options.tenant, options.lead))
-    .map(({ sequence, index, scheduledFor }) => ({
-      tenant_id: options.tenant.identity.tenantId,
-      lead_id: options.lead.id,
-      sequence_id: sequence.id,
-      step_index: index,
-      recipient_email: options.lead.email,
-      subject: sequence.subject,
-      template: sequence.template,
-      status: "pending",
-      scheduled_for: scheduledFor.toISOString()
-    }));
+    .map(({ sequence, index, scheduledFor }) => {
+      const content = resolveSequenceContent(sequence, options.lead);
+
+      return {
+        tenant_id: options.tenant.identity.tenantId,
+        lead_id: options.lead.id,
+        sequence_id: sequence.id,
+        step_index: index,
+        recipient_email: options.lead.email,
+        subject: content.subject,
+        template: content.template,
+        variant_id: content.variantId,
+        status: "pending",
+        scheduled_for: scheduledFor.toISOString()
+      };
+    });
 
   if (rows.length === 0) {
     return 0;
@@ -143,7 +151,7 @@ export async function runDueEmailSends(options: RunOptions): Promise<{ processed
   const now = options.now ?? new Date();
   let query = options.supabase
     .from("email_sends")
-    .select("id, tenant_id, lead_id, recipient_email, subject, template, sequence_id")
+    .select("id, tenant_id, lead_id, recipient_email, subject, template, sequence_id, variant_id")
     .eq("status", "pending")
     .lte("scheduled_for", now.toISOString());
 
@@ -202,6 +210,7 @@ export async function runDueEmailSends(options: RunOptions): Promise<{ processed
         metadata: {
           emailSendId: row.id,
           sequenceId: row.sequence_id,
+          variantId: row.variant_id,
           providerMessageId: result.id,
           recipientEmail: row.recipient_email
         }
@@ -216,6 +225,17 @@ export async function runDueEmailSends(options: RunOptions): Promise<{ processed
     processed: data.length,
     sent,
     skipped
+  };
+}
+
+function resolveSequenceContent(sequence: EmailSequence, lead: LeadEmailContext) {
+  const requestedVariantId = typeof lead.data.emailVariant === "string" ? lead.data.emailVariant : undefined;
+  const variant = sequence.variants?.find((candidate) => candidate.id === requestedVariantId);
+
+  return {
+    subject: variant?.subject ?? sequence.subject,
+    template: variant?.template ?? sequence.template,
+    variantId: variant?.id ?? null
   };
 }
 

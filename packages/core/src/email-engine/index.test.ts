@@ -9,16 +9,21 @@ import {
 
 function createSupabaseStub() {
   let insertedRows = 0;
+  let rowsPayload: unknown[] = [];
 
   return {
     get insertedRows() {
       return insertedRows;
+    },
+    get rowsPayload() {
+      return rowsPayload;
     },
     client: {
       from() {
         return {
           insert(rows: unknown[]) {
             insertedRows = rows.length;
+            rowsPayload = rows;
             return Promise.resolve({ error: null });
           }
         };
@@ -89,5 +94,49 @@ describe("email-engine", () => {
 
     expect(count).toBe(5);
     expect(supabase.insertedRows).toBe(5);
+  });
+
+  it("uses a configured email variant when lead data requests it", async () => {
+    const supabase = createSupabaseStub();
+    const count = await scheduleEmailSequence({
+      supabase: supabase.client as never,
+      tenant: {
+        ...demoTenant,
+        email: {
+          ...demoTenant.email,
+          sequences: [
+            {
+              id: "recommendation",
+              subject: "Control subject",
+              delayHours: 0,
+              template: "Control body",
+              condition: "always",
+              variants: [
+                {
+                  id: "variant-a",
+                  subject: "Variant subject",
+                  template: "Variant body"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      lead: {
+        id: "lead-1",
+        email: "lead@example.com",
+        score: 90,
+        data: { emailVariant: "variant-a" }
+      }
+    });
+
+    expect(count).toBe(1);
+    expect(supabase.rowsPayload).toMatchObject([
+      {
+        subject: "Variant subject",
+        template: "Variant body",
+        variant_id: "variant-a"
+      }
+    ]);
   });
 });

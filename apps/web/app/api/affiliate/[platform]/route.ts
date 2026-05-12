@@ -24,6 +24,8 @@ export async function GET(request: NextRequest, context: AffiliateRouteContext) 
   const tenantSlug = requestUrl.searchParams.get("tenant") ?? process.env.TENANT_SLUG ?? resolveTenantSlug(host);
   const tenant = getTenantConfig(tenantSlug);
   const leadId = requestUrl.searchParams.get("lead_id");
+  const quizVariant = requestUrl.searchParams.get("quiz_variant") ?? undefined;
+  const emailVariant = requestUrl.searchParams.get("email_variant") ?? undefined;
   const eventId = crypto.randomUUID();
   const targetUrl = getHvacAffiliateUrl(platform);
   const platformName = hvacPlatforms[platform].platformName;
@@ -38,6 +40,8 @@ export async function GET(request: NextRequest, context: AffiliateRouteContext) 
     platformName,
     targetUrl,
     eventId,
+    ...(quizVariant ? { quizVariant } : {}),
+    ...(emailVariant ? { emailVariant } : {}),
     ...(clientIp ? { clientIp } : {}),
     ...(userAgent ? { userAgent } : {})
   });
@@ -51,7 +55,9 @@ export async function GET(request: NextRequest, context: AffiliateRouteContext) 
       payload: {
         platform,
         platformName,
-        source: "email_clickthrough"
+        source: "email_clickthrough",
+        ...(quizVariant ? { quizVariant } : {}),
+        ...(emailVariant ? { emailVariant } : {})
       },
       ...(clientIp ? { clientIp } : {}),
       ...(userAgent ? { userAgent } : {})
@@ -67,10 +73,10 @@ export async function GET(request: NextRequest, context: AffiliateRouteContext) 
       ...(tenant.tracking.metaPixelId ? { pixelId: tenant.tracking.metaPixelId } : {})
     }),
     {
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "no-store"
-    }
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store"
+      }
     }
   );
 }
@@ -82,6 +88,8 @@ async function logAffiliateClick(options: {
   platformName: string;
   targetUrl: string;
   eventId: string;
+  quizVariant?: string;
+  emailVariant?: string;
   clientIp?: string;
   userAgent?: string;
 }) {
@@ -98,8 +106,10 @@ async function logAffiliateClick(options: {
           platformName: options.platformName,
           targetUrl: options.targetUrl,
           eventId: options.eventId,
-          clientIp: options.clientIp,
-          userAgent: options.userAgent
+          ...(options.quizVariant ? { quizVariant: options.quizVariant } : {}),
+          ...(options.emailVariant ? { emailVariant: options.emailVariant } : {}),
+          ...(options.clientIp ? { clientIp: options.clientIp } : {}),
+          ...(options.userAgent ? { userAgent: options.userAgent } : {})
         }
       }),
       supabase.from("lead_events").insert({
@@ -110,7 +120,9 @@ async function logAffiliateClick(options: {
         payload: {
           platform: options.platform,
           platformName: options.platformName,
-          source: "email_clickthrough"
+          source: "email_clickthrough",
+          ...(options.quizVariant ? { quizVariant: options.quizVariant } : {}),
+          ...(options.emailVariant ? { emailVariant: options.emailVariant } : {})
         }
       })
     ]);
