@@ -13,10 +13,31 @@ export type LeadRow = {
   phone: string | null;
   status: string;
   score: number;
+  first_name: string | null;
+  last_name: string | null;
+  retirement_score: number | null;
+  score_band: string | null;
+  assigned_advisor_id: string | null;
+  advisor_notes: string | null;
+  appointment_booked_at: string | null;
+  appointment_held_at: string | null;
+  case_opened_at: string | null;
+  case_closed_at: string | null;
+  premium_amount: number | null;
+  override_earned: number | null;
   source: Record<string, unknown>;
   data: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+};
+
+export type AdvisorRow = {
+  id: string;
+  name: string;
+  email: string;
+  geography: string;
+  current_capacity: number;
+  accepting_leads: boolean;
 };
 
 export type LeadEventRow = {
@@ -40,6 +61,14 @@ export type FunnelStats = {
   completedLeads: number;
   stepCounts: Record<string, number>;
   sources: Record<string, number>;
+  scoreBands: Record<string, number>;
+  emailOpenRate: number;
+  emailClickRate: number;
+  advisorHandoffRate: number;
+  closeRate: number;
+  totalAdSpend: number;
+  costPerLead: number;
+  costPerClosedCase: number;
 };
 
 export type TenantDashboardStats = {
@@ -146,11 +175,35 @@ export async function getLeadRows(tenant: TenantConfig): Promise<AdminDataState<
 
   const { data, error } = await client.data
     .from("leads")
-    .select("id, email, phone, status, score, source, data, created_at, updated_at")
+    .select(
+      "id, email, phone, status, score, first_name, last_name, retirement_score, score_band, assigned_advisor_id, advisor_notes, appointment_booked_at, appointment_held_at, case_opened_at, case_closed_at, premium_amount, override_earned, source, data, created_at, updated_at"
+    )
     .eq("tenant_id", tenant.identity.tenantId)
+    .order("retirement_score", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(100)
     .overrideTypes<LeadRow[], { merge: false }>();
+
+  if (error) {
+    return { status: "unavailable", reason: error.message };
+  }
+
+  return { status: "ready", data };
+}
+
+export async function getAdvisors(tenant: TenantConfig): Promise<AdminDataState<AdvisorRow[]>> {
+  const client = getServiceClient();
+  if (client.status === "unavailable") {
+    return client;
+  }
+
+  const { data, error } = await client.data
+    .from("advisors")
+    .select("id, name, email, geography, current_capacity, accepting_leads")
+    .eq("tenant_id", tenant.identity.tenantId)
+    .order("accepting_leads", { ascending: false })
+    .order("current_capacity", { ascending: true })
+    .overrideTypes<AdvisorRow[], { merge: false }>();
 
   if (error) {
     return { status: "unavailable", reason: error.message };
@@ -186,21 +239,47 @@ export async function getFunnelStats(tenant: TenantConfig): Promise<AdminDataSta
     return client;
   }
 
-  const { data, error } = await client.data
-    .from("lead_events")
-    .select("event_name, payload")
-    .eq("tenant_id", tenant.identity.tenantId)
-    .overrideTypes<Array<{ event_name: string; payload: Record<string, unknown> }>, { merge: false }>();
+  const [leadEvents, leads, emailSends, adSpend] = await Promise.all([
+    client.data
+      .from("lead_events")
+      .select("event_name, payload")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .overrideTypes<Array<{ event_name: string; payload: Record<string, unknown> }>, { merge: false }>(),
+    client.data
+      .from("leads")
+      .select("status, score_band, assigned_advisor_id, case_closed_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .overrideTypes<
+        Array<{ status: string; score_band: string | null; assigned_advisor_id: string | null; case_closed_at: string | null }>,
+        { merge: false }
+      >(),
+    client.data
+      .from("email_sends")
+      .select("status, opened_at, clicked_at")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .overrideTypes<Array<{ status: string; opened_at: string | null; clicked_at: string | null }>, { merge: false }>(),
+    client.data
+      .from("ad_spend")
+      .select("amount")
+      .eq("tenant_id", tenant.identity.tenantId)
+      .overrideTypes<Array<{ amount: number }>, { merge: false }>()
+  ]);
 
+  const error = leadEvents.error ?? leads.error ?? emailSends.error ?? adSpend.error;
   if (error) {
     return { status: "unavailable", reason: error.message };
   }
 
+  const leadEventRows = leadEvents.data ?? [];
+  const leadRows = leads.data ?? [];
+  const emailSendRows = emailSends.data ?? [];
+  const adSpendRows = adSpend.data ?? [];
   const stepCounts: Record<string, number> = {};
   const sources: Record<string, number> = {};
+  const scoreBands: Record<string, number> = {};
   let completedLeads = 0;
 
-  for (const event of data) {
+  for (const event of leadEventRows) {
     const stepId = typeof event.payload.stepId === "string" ? event.payload.stepId : "unknown";
     stepCounts[stepId] = (stepCounts[stepId] ?? 0) + 1;
 
@@ -216,13 +295,35 @@ export async function getFunnelStats(tenant: TenantConfig): Promise<AdminDataSta
     }
   }
 
+  for (const lead of leadRows) {
+    if (lead.score_band) {
+      scoreBands[lead.score_band] = (scoreBands[lead.score_band] ?? 0) + 1;
+    }
+  }
+
+  const totalLeads = leadRows.filter((lead) => lead.status !== "partial").length;
+  const advisorHandoffs = leadRows.filter((lead) => lead.assigned_advisor_id).length;
+  const closedCases = leadRows.filter((lead) => lead.case_closed_at).length;
+  const sentEmails = emailSendRows.filter((send) => send.status === "sent").length;
+  const openedEmails = emailSendRows.filter((send) => send.opened_at).length;
+  const clickedEmails = emailSendRows.filter((send) => send.clicked_at).length;
+  const totalAdSpend = adSpendRows.reduce((sum, row) => sum + Number(row.amount), 0);
+
   return {
     status: "ready",
     data: {
-      totalEvents: data.length,
+      totalEvents: leadEventRows.length,
       completedLeads,
       stepCounts,
-      sources
+      sources,
+      scoreBands,
+      emailOpenRate: ratio(openedEmails, sentEmails),
+      emailClickRate: ratio(clickedEmails, sentEmails),
+      advisorHandoffRate: ratio(advisorHandoffs, totalLeads),
+      closeRate: ratio(closedCases, totalLeads),
+      totalAdSpend,
+      costPerLead: totalLeads === 0 ? 0 : Math.round(totalAdSpend / totalLeads),
+      costPerClosedCase: closedCases === 0 ? 0 : Math.round(totalAdSpend / closedCases)
     }
   };
 }

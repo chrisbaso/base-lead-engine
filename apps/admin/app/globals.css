@@ -112,6 +112,53 @@ h3 {
   color: var(--foreground);
 }
 
+.admin-shell input,
+.admin-shell button {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 0 10px;
+  background: var(--panel);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.admin-shell button {
+  background: var(--color-accent);
+  color: var(--color-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-form-row,
+.inline-admin-form,
+.outcome-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-form-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  margin-top: 16px;
+}
+
+.inline-admin-form {
+  min-width: 260px;
+}
+
+.outcome-stack {
+  min-width: 220px;
+}
+
+.outcome-stack form {
+  display: flex;
+  gap: 6px;
+}
+
+.outcome-stack input {
+  width: 88px;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

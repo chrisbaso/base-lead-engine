@@ -1,4 +1,5 @@
 import { AdminShell, EmptyState, Metric, MetricGrid } from "../admin-shell";
+import { recordAdSpendAction } from "../actions";
 import { getFunnelStats, resolveAdminTenant } from "../data";
 
 type FunnelsPageProps = {
@@ -26,7 +27,24 @@ export default async function FunnelsPage({ searchParams }: FunnelsPageProps) {
         <Metric label="Steps" value={String(tenant.leadCapture.steps.length)} />
         <Metric label="Completion" value={percent(completed, totalEvents)} />
         <Metric label="Events" value={String(totalEvents)} />
+        <Metric label="Email open" value={stats.status === "ready" ? percent(stats.data.emailOpenRate, 100) : "0%"} />
+        <Metric label="Email click" value={stats.status === "ready" ? percent(stats.data.emailClickRate, 100) : "0%"} />
+        <Metric label="Advisor handoff" value={stats.status === "ready" ? percent(stats.data.advisorHandoffRate, 100) : "0%"} />
+        <Metric label="Close rate" value={stats.status === "ready" ? percent(stats.data.closeRate, 100) : "0%"} />
+        <Metric label="Cost / lead" value={stats.status === "ready" ? `$${String(stats.data.costPerLead)}` : "$0"} />
+        <Metric label="Cost / closed case" value={stats.status === "ready" ? `$${String(stats.data.costPerClosedCase)}` : "$0"} />
       </MetricGrid>
+      <section>
+        <h2>Ad Spend Input</h2>
+        <form className="admin-form-row" action={recordAdSpendAction}>
+          <input type="hidden" name="tenantSlug" value={tenant.identity.slug} />
+          <input name="source" placeholder="Source, e.g. meta" />
+          <input name="campaign" placeholder="Campaign" />
+          <input name="amount" placeholder="Amount" type="number" min="0" step="0.01" />
+          <button type="submit">Add spend</button>
+        </form>
+        {stats.status === "ready" ? <p>Total tracked spend: ${String(stats.data.totalAdSpend)}</p> : null}
+      </section>
       <section>
         <h2>Funnel Steps</h2>
         <div className="step-list">
@@ -43,6 +61,31 @@ export default async function FunnelsPage({ searchParams }: FunnelsPageProps) {
             </article>
           ))}
         </div>
+      </section>
+      <section>
+        <h2>Score Distribution</h2>
+        {stats.status === "ready" && Object.keys(stats.data.scoreBands).length > 0 ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Band</th>
+                  <th>Leads</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(stats.data.scoreBands).map(([band, count]) => (
+                  <tr key={band}>
+                    <td>{band}</td>
+                    <td>{String(count)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState title="No score data yet" body="Score bands will appear after checkups complete." />
+        )}
       </section>
       <section>
         <h2>Source Attribution</h2>

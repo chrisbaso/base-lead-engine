@@ -98,7 +98,7 @@ export async function submitLeadAction(input: {
           userAgent
         }).filter((entry): entry is [string, string] => typeof entry[1] === "string")
       ),
-      ...(tenant.identity.slug === "hvac-ops-pro"
+      ...(tenant.identity.slug === "hvac-ops-pro" || tenant.identity.slug === "retire-ready-mn"
         ? {
             immediateEmail: {
               appUrl,
