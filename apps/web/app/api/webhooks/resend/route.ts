@@ -5,10 +5,12 @@ import { getSupabaseClient } from "@ble/db";
 
 const resendWebhookSchema = z.object({
   type: z.string().min(1),
-  data: z.object({
-    email_id: z.string().min(1),
-    to: z.array(z.string().email()).min(1)
-  })
+  data: z
+    .object({
+      email_id: z.string().min(1),
+      to: z.array(z.string().email()).min(1)
+    })
+    .passthrough()
 });
 
 export async function POST(request: Request) {
@@ -25,7 +27,8 @@ export async function POST(request: Request) {
     tenantSlug,
     eventType: payload.type,
     messageId: payload.data.email_id,
-    recipientEmail: firstRecipient
+    recipientEmail: firstRecipient,
+    metadata: payload.data
   });
 
   return NextResponse.json({ ok: true });

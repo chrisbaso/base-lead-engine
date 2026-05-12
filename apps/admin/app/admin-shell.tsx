@@ -3,8 +3,12 @@ import { listTenantConfigs } from "@ble/core/tenant-config";
 
 const navItems = [
   { href: "/", label: "Overview" },
+  { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/leads", label: "Leads" },
   { href: "/funnels", label: "Funnels" },
+  { href: "/admin/funnel", label: "Retire Funnel" },
+  { href: "/admin/agents", label: "Lead Agents" },
+  { href: "/admin/content", label: "Content Ops" },
   { href: "/sequences", label: "Sequences" },
   { href: "/config", label: "Config" }
 ];

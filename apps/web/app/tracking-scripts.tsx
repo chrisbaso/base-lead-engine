@@ -48,10 +48,15 @@ export function TrackingScripts({ tenant }: TrackingScriptsProps) {
         {`
           window.addEventListener("ble:tracking", function(event) {
             var detail = event.detail || {};
+            var mappings = detail.payload && detail.payload.eventMappings ? detail.payload.eventMappings : {};
+            var mapped = mappings[detail.eventName] || {};
+            var metaEvent = mapped.meta || detail.eventName;
+            var googleEvent = mapped.googleAds || detail.eventName;
+            var gtmEvent = mapped.gtm || detail.eventName;
             window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({ event: detail.eventName, payload: detail.payload });
-            if (window.fbq) window.fbq("trackCustom", detail.eventName, detail.payload || {});
-            if (window.gtag) window.gtag("event", detail.eventName, detail.payload || {});
+            window.dataLayer.push({ event: gtmEvent, payload: detail.payload });
+            if (window.fbq) window.fbq("track", metaEvent, detail.payload || {});
+            if (window.gtag) window.gtag("event", googleEvent, detail.payload || {});
           });
         `}
       </Script>
