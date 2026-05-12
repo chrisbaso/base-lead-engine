@@ -14,6 +14,7 @@
     "@ble/core": "workspace:*",
     "@ble/db": "workspace:*",
     "@ble/tenant-hvac-ops-pro": "workspace:*",
+    "@ble/tenant-retire-ready-mn": "workspace:*",
     "@ble/tenant-schema": "workspace:*",
     "@ble/ui": "workspace:*",
     "lucide-react": "^1.14.0",

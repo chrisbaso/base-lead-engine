@@ -1,5 +1,6 @@
 import demoConfig from "@ble/tenant-demo";
 import hvacOpsProConfig from "@ble/tenant-hvac-ops-pro";
+import retireReadyMnConfig from "@ble/tenant-retire-ready-mn";
 import retirementConfig from "@ble/tenant-retirement";
 import smartRetirementMnConfig from "@ble/tenant-smart-retirement-mn";
 import { tenantConfigSchema, type TenantConfig } from "@ble/tenant-schema";
@@ -8,6 +9,7 @@ const tenantConfigs: Record<string, TenantConfig> = {
   demo: demoConfig,
   "hvac-ops-pro": hvacOpsProConfig,
   retirement: retirementConfig,
+  "retire-ready-mn": retireReadyMnConfig,
   "smart-retirement-mn": smartRetirementMnConfig
 };
 

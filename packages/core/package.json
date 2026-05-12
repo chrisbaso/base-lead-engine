@@ -31,6 +31,7 @@
   "dependencies": {
     "@ble/tenant-demo": "workspace:*",
     "@ble/tenant-hvac-ops-pro": "workspace:*",
+    "@ble/tenant-retire-ready-mn": "workspace:*",
     "@ble/tenant-retirement": "workspace:*",
     "@ble/tenant-smart-retirement-mn": "workspace:*",
     "@ble/tenant-schema": "workspace:*",

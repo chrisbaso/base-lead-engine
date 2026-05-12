@@ -99,6 +99,9 @@ importers:
       '@ble/tenant-hvac-ops-pro':
         specifier: workspace:*
         version: link:../../packages/tenants/hvac-ops-pro
+      '@ble/tenant-retire-ready-mn':
+        specifier: workspace:*
+        version: link:../../packages/tenants/retire-ready-mn
       '@ble/tenant-schema':
         specifier: workspace:*
         version: link:../../packages/tenants/_schema
@@ -139,6 +142,9 @@ importers:
       '@ble/tenant-hvac-ops-pro':
         specifier: workspace:*
         version: link:../tenants/hvac-ops-pro
+      '@ble/tenant-retire-ready-mn':
+        specifier: workspace:*
+        version: link:../tenants/retire-ready-mn
       '@ble/tenant-retirement':
         specifier: workspace:*
         version: link:../tenants/retirement
@@ -180,6 +186,12 @@ importers:
         version: link:../_schema
 
   packages/tenants/hvac-ops-pro:
+    dependencies:
+      '@ble/tenant-schema':
+        specifier: workspace:*
+        version: link:../_schema
+
+  packages/tenants/retire-ready-mn:
     dependencies:
       '@ble/tenant-schema':
         specifier: workspace:*
