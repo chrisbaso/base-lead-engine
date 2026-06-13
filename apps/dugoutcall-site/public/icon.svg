@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="DugoutCall icon">
+  <rect width="64" height="64" rx="18" fill="#1A2230" />
+  <path d="M18 42V22h13.5c6.8 0 11.5 4.1 11.5 10s-4.7 10-11.5 10H18Zm7.1-6.2h6.1c2.9 0 4.8-1.5 4.8-3.8s-1.9-3.8-4.8-3.8h-6.1v7.6Z" fill="#F0EEE6" />
+  <circle cx="47" cy="42" r="4" fill="#B4423A" />
+</svg>
