@@ -9,6 +9,7 @@ export default [
       "**/coverage/**",
       "**/node_modules/**",
       "**/next-env.d.ts",
+      "**/next.config.mjs",
       "**/postcss.config.mjs",
       "reference/**"
     ]
