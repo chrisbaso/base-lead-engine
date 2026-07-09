@@ -11,7 +11,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ble/ui": "workspace:*",
     "@supabase/supabase-js": "^2.49.4",
     "lucide-react": "^1.14.0",
     "next": "15.5.7",

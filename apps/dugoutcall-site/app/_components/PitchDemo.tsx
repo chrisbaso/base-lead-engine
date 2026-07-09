@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { Mic } from "lucide-react";
-import { cn } from "@ble/ui/lib/utils";
 
 type ZoneKind = "attack" | "avoid" | "neutral";
 
@@ -37,6 +36,10 @@ const pitches: Pitch[] = [
   { id: "SL", label: "SL" },
   { id: "CH", label: "CH★", recommended: true }
 ];
+
+function classNames(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
+}
 
 export function PitchDemo() {
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
@@ -152,7 +155,7 @@ export function PitchDemo() {
         <div className="send-row">
           <button
             type="button"
-            className={cn("demo-button", canSend ? "is-ready" : undefined)}
+            className={classNames("demo-button", canSend ? "is-ready" : undefined)}
             disabled={!canSend}
             onClick={handleSend}
           >
